@@ -1,0 +1,181 @@
+"""
+Case Study Agent:
+1. Extracts projects from resume and generates detailed case studies.
+2. Template-based case study generation from extracted project details.
+Domain case study generation for common system types.
+"""
+from services.ai_client import generate_text
+from services.template_loader import get_case_study_template, list_case_study_templates
+
+# ─── Template-Based Case Study ────────────────────────────────────────────────
+
+TEMPLATE_BASED_PROMPT = """
+You are an expert technical case study writer.
+
+Below is a professional case study template. You MUST follow the exact same structure,
+headings, and writing style as the template.
+
+Case Study Template:
+{template_text}
+
+Using the candidate project details below, generate a complete professional case study
+document following the same structure and headings as the template.
+
+Rules:
+- Do NOT change or skip any section headings from the template
+- Write detailed, professional content under each section
+- Make the document suitable for interview discussion and technical presentation
+- Use specific metrics and technical details wherever possible
+- Write in third-person professional style
+
+Candidate Project Details:
+{project_details}
+"""
+
+# ─── Resume-Based Case Study ──────────────────────────────────────────────────
+
+RESUME_CASE_STUDY_PROMPT = """
+You are an AI Candidate Preparation Assistant helping a candidate prepare for interviews.
+
+From the resume below, extract the most significant project and generate a professional
+case study document in the following structure:
+
+## Case Study: [Project Name]
+
+### 1. Executive Summary
+[2-3 sentence overview suitable for opening an interview discussion]
+
+### 2. Problem Statement
+[What business or technical problem was being solved? Why did it matter?]
+
+### 3. Objective
+[Clear goals and success criteria of the project]
+
+### 4. Solution Approach
+[How was the problem solved? What was the strategy and rationale?]
+
+### 5. Architecture & Workflow
+[System design, key components, data flow, integration points]
+
+### 6. Technologies Used
+[Full tech stack: languages, frameworks, cloud services, databases, tools]
+
+### 7. Your Role & Responsibilities
+[What specifically did you build, own, or lead?]
+
+### 8. Key Challenges & How They Were Solved
+[Top 2-3 hardest problems and how you overcame them]
+
+### 9. Results & Impact
+[Measurable outcomes: performance improvements, cost savings, user growth, etc.]
+
+### 10. Interview Q&A
+Generate 7 likely interview questions about this project with ideal short answers.
+
+Be specific, technical, and interview-ready throughout.
+
+Resume:
+{resume_text}
+"""
+
+# ─── Domain Case Study ────────────────────────────────────────────────────────
+
+DOMAIN_CASE_STUDY_PROMPT = """
+You are an AI Interview Preparation Assistant.
+
+Generate a comprehensive, realistic case study for the following domain/system type:
+**{topic}**
+
+Structure it exactly as follows:
+
+## Case Study: {topic}
+
+### 1. Executive Summary
+### 2. Problem Statement
+### 3. Objective
+### 4. Solution Approach
+### 5. Architecture & Workflow
+[Include a text-based architecture diagram using ASCII or structured text]
+### 6. Technologies Used
+### 7. Key Challenges & Solutions
+### 8. Results & Impact
+### 9. Interview Q&A
+[10 common interview questions about this system with ideal answers]
+
+Make the content realistic, deeply technical, and suitable for a senior software engineering
+interview. Include real numbers and metrics where appropriate.
+"""
+
+# ─── Default Case Study Template ─────────────────────────────────────────────
+
+DEFAULT_TEMPLATE = """
+## Project Overview
+Brief summary of the project.
+
+## Problem Statement
+What problem does this project solve?
+
+## Objectives
+Key goals of the project.
+
+## Solution
+Technical solution implemented.
+
+## Architecture
+System components and how they interact.
+
+## Technologies Used
+List of all technologies.
+
+## Implementation
+Key implementation details.
+
+## Challenges
+Problems faced and solutions.
+
+## Results
+Outcomes and impact achieved.
+
+## Conclusion
+Summary and learnings.
+"""
+
+
+async def generate_case_study_from_resume(resume_text: str, api_key: str, provider: str) -> str:
+    """Generate a case study from the candidate's resume."""
+    prompt = RESUME_CASE_STUDY_PROMPT.format(resume_text=resume_text[:8000])
+    return await generate_text(prompt, api_key, provider)
+
+
+async def generate_template_based_case_study(
+    project_details: str,
+    api_key: str,
+    provider: str,
+    template_key: str = "mlops",
+    template_text: str = None,
+) -> str:
+    """Generate a case study using a provided template structure."""
+    if template_text is None:
+        # Load real template description from template_loader
+        tmpl = get_case_study_template(template_key)
+        template_text = f"""
+# Template: {tmpl['name']}
+
+{tmpl['description']}
+"""
+    prompt = TEMPLATE_BASED_PROMPT.format(
+        template_text=template_text,
+        project_details=project_details[:6000],
+    )
+    return await generate_text(prompt, api_key, provider)
+
+
+async def generate_domain_case_study(topic: str, api_key: str, provider: str) -> str:
+    """Generate a generic domain case study (e.g., RAG system, chatbot)."""
+    prompt = DOMAIN_CASE_STUDY_PROMPT.format(topic=topic)
+    return await generate_text(prompt, api_key, provider)
+
+
+def get_available_templates() -> list:
+    """Return list of available template options for the frontend."""
+    return list_case_study_templates()
