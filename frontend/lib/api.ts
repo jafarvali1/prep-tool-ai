@@ -35,6 +35,15 @@ export async function generateCaseStudy(sessionId: string, topic?: string) {
   return res.data;
 }
 
+export async function generateCaseStudyFromTemplate(sessionId: string, projectDetails: string, templateKey: string) {
+  const res = await api.post("/api/case-study/generate-from-template", {
+    session_id: sessionId,
+    project_details: projectDetails,
+    template_key: templateKey,
+  });
+  return res.data;
+}
+
 export async function getCaseStudyHistory(sessionId: string) {
   const res = await api.get("/api/case-study/history", { params: { session_id: sessionId } });
   return res.data;

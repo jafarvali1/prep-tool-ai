@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { generateCaseStudy, getTopics, getCaseStudyHistory } from "@/lib/api";
+import { generateCaseStudy, getTopics, getCaseStudyHistory, generateCaseStudyFromTemplate, getLatestProject, extractProject } from "@/lib/api";
 import ReactMarkdown from "react-markdown";
 import toast from "react-hot-toast";
 import Link from "next/link";
@@ -31,17 +31,41 @@ export default function CaseStudyPage() {
     setContent("");
     setViewingHistoryId(null);
     try {
-      const data = await generateCaseStudy(
-        sessionId,
-        generationType === "domain" ? selectedTopic || topics[0] : undefined
-      );
+      let data;
+      if (generationType === "domain") {
+        const topicStr = selectedTopic || topics[0] || "";
+        let templateKey = "mlops";
+        if (topicStr.toLowerCase().includes("rag")) templateKey = "rag";
+        else if (topicStr.toLowerCase().includes("agentic")) templateKey = "agentic";
+
+        let projectDetails = "";
+        try {
+          const lp = await getLatestProject(sessionId);
+          if (lp && lp.project_details) {
+            projectDetails = lp.project_details;
+          } else {
+            toast.loading("Extracting project from resume...", { id: "extract" });
+            const ep = await extractProject(sessionId);
+            projectDetails = ep.project_details;
+            toast.dismiss("extract");
+          }
+        } catch (err) {
+          toast.dismiss("extract");
+          throw new Error("Failed to extract project from resume. Did you upload one?");
+        }
+        
+        data = await generateCaseStudyFromTemplate(sessionId, projectDetails, templateKey);
+      } else {
+        data = await generateCaseStudy(sessionId, undefined);
+      }
+
       setContent(data.content);
       // Refresh history
       const h = await getCaseStudyHistory(sessionId);
       setHistory(h.case_studies || []);
       toast.success("Case study generated!");
     } catch (err: any) {
-      toast.error(err?.response?.data?.detail || "Generation failed. Please try again.");
+      toast.error(err.message || err?.response?.data?.detail || "Generation failed. Please try again.");
     } finally {
       setLoading(false);
     }

@@ -5,7 +5,12 @@ import { Brain, Zap, Mic, FileText, ArrowRight, CheckCircle, Star } from "lucide
 
 export default function HomePage() {
   const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    setMounted(true);
+    if (localStorage.getItem("session_id")) {
+      window.location.href = "/dashboard";
+    }
+  }, []);
 
   const features = [
     {

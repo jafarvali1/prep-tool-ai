@@ -24,8 +24,12 @@ export default function SetupPage() {
   const [errorMsg, setErrorMsg] = useState("");
   const [backendOk, setBackendOk] = useState<boolean | null>(null);
 
-  // Check backend is reachable on load
+  // Check backend is reachable and redirect if logged in
   useEffect(() => {
+    if (localStorage.getItem("session_id")) {
+      window.location.href = "/dashboard";
+      return;
+    }
     axios.get("http://localhost:8000/health", { timeout: 4000 })
       .then(() => setBackendOk(true))
       .catch(() => setBackendOk(false));

@@ -17,14 +17,9 @@ from typing import Optional
 router = APIRouter(prefix="/api/case-study", tags=["case-study"])
 
 DOMAIN_TOPICS = [
-    "Customer Care AI System",
-    "RAG (Retrieval-Augmented Generation) System",
-    "Multi-Agent Agentic AI System",
-    "MLOps / Fraud Detection System",
-    "Chatbot & Conversational AI",
-    "Recommendation System",
-    "Automation & Workflow System",
-    "E-commerce Platform",
+    "MLOps - Fraud Detection System (XYZ Corp)",
+    "RAG Customer Call Center Agent (XYZ Corp)",
+    "Agentic AI - Multi-Agent Customer Call Center (XYZ Corp)"
 ]
 
 
@@ -122,6 +117,7 @@ async def generate_from_template(request: TemplateCaseStudyRequest, db: Session 
     try:
         content = await generate_template_based_case_study(
             project_details=request.project_details,
+            resume_text=candidate.resume_text,
             api_key=candidate.api_key,
             provider=candidate.api_provider,
             template_key=request.template_key or "mlops",

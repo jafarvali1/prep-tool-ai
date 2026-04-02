@@ -12,24 +12,22 @@ from services.template_loader import get_case_study_template, list_case_study_te
 TEMPLATE_BASED_PROMPT = """
 You are an expert technical case study writer.
 
-Below is a professional case study template. You MUST follow the exact same structure,
-headings, and writing style as the template.
+CRITICAL INSTRUCTIONS FOR MERGING:
+Your goal is to write a deeply technical case study that keeps the EXACT technical topic, architecture, and structural headings of the Template, but sets the story entirely within the Candidate's current/latest Company and Role found in their Resume.
 
-Case Study Template:
+1. TECHNICAL THEME & FEATURES: You MUST keep the exact core technical system from the Template (e.g., if the template is "Agentic AI", you MUST write about Agentic AI. If it is "MLOps", you MUST write about MLOps). Do NOT change the core technology to match the candidate's past work. 
+2. COMPANY & NAMES: You MUST extract the Candidate's most recent/current Company Name and Product/Project Name from the Resume below. Completely replace "XYZ Corp" and any template placeholder names with the Candidate's REAL Company Name.
+3. ADAPTATION: Write the case study as if the Candidate built this exact Template system at their REAL company.
+4. HEADINGS: Use EVERY section heading provided in the Template's structure.
+
+Case Study Template (USE THIS FOR HEADINGS, STRUCTURE, & THE SYSTEM'S CORE ARCHITECTURE):
 {template_text}
 
-Using the candidate project details below, generate a complete professional case study
-document following the same structure and headings as the template.
-
-Rules:
-- Do NOT change or skip any section headings from the template
-- Write detailed, professional content under each section
-- Make the document suitable for interview discussion and technical presentation
-- Use specific metrics and technical details wherever possible
-- Write in third-person professional style
-
-Candidate Project Details:
+Candidate's Extracted Project Background:
 {project_details}
+
+Candidate's Full Resume (EXTRACT THE CURRENT COMPANY NAME AND APPLY IT TO THE CASE STUDY):
+{resume_text}
 """
 
 # ─── Resume-Based Case Study ──────────────────────────────────────────────────
@@ -149,6 +147,7 @@ async def generate_case_study_from_resume(resume_text: str, api_key: str, provid
 
 async def generate_template_based_case_study(
     project_details: str,
+    resume_text: str,
     api_key: str,
     provider: str,
     template_key: str = "mlops",
@@ -166,6 +165,7 @@ async def generate_template_based_case_study(
     prompt = TEMPLATE_BASED_PROMPT.format(
         template_text=template_text,
         project_details=project_details[:6000],
+        resume_text=resume_text[:6000],
     )
     return await generate_text(prompt, api_key, provider)
 

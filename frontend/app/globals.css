@@ -156,6 +156,11 @@ select.input-field {
   cursor: pointer;
 }
 
+select.input-field option {
+  background: var(--bg-card);
+  color: var(--text-primary);
+}
+
 /* Label */
 .label {
   font-size: 13px;
