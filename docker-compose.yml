@@ -1,3 +1,47 @@
+# services:
+#   db:
+#     image: mysql:8.0
+#     restart: always
+#     environment:
+#       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-rootpassword}
+#       MYSQL_DATABASE: ${DB_NAME:-ai_prep}
+#       MYSQL_USER: ${DB_USER:-ai_user}
+#       MYSQL_PASSWORD: ${DB_PASSWORD:-mypassword}
+#     ports:
+#       # - "3306:3306"
+#       - "3307:3306"
+#     volumes:
+#       - mysql_data:/var/lib/mysql
+
+#   backend:
+#     build: ./backend
+#     restart: always
+#     ports:
+#       - "8000:8000"
+#     environment:
+#       # Connects to the 'db' container via its service name
+#       DATABASE_URL: mysql+pymysql://${DB_USER:-ai_user}:${DB_PASSWORD:-mypassword}@db:3306/${DB_NAME:-ai_prep}
+#       CORS_ORIGINS: http://localhost:3000
+#     volumes:
+#       # Maps local uploads folder to persist uploaded resumes
+#       - ./backend/uploads:/app/uploads
+#     depends_on:
+#       - db
+
+#   frontend:
+#     build: ./frontend
+#     restart: always
+#     ports:
+#       - "3000:3000"
+#     environment:
+#       NEXT_PUBLIC_API_URL: http://localhost:8000
+#     depends_on:
+#       - backend
+
+# volumes:
+#   mysql_data:
+
+
 services:
   db:
     image: mysql:8.0
@@ -8,10 +52,14 @@ services:
       MYSQL_USER: ${DB_USER:-ai_user}
       MYSQL_PASSWORD: ${DB_PASSWORD:-mypassword}
     ports:
-      # - "3306:3306"
       - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   backend:
     build: ./backend
@@ -19,14 +67,13 @@ services:
     ports:
       - "8000:8000"
     environment:
-      # Connects to the 'db' container via its service name
       DATABASE_URL: mysql+pymysql://${DB_USER:-ai_user}:${DB_PASSWORD:-mypassword}@db:3306/${DB_NAME:-ai_prep}
       CORS_ORIGINS: http://localhost:3000
     volumes:
-      # Maps local uploads folder to persist uploaded resumes
       - ./backend/uploads:/app/uploads
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
   frontend:
     build: ./frontend
