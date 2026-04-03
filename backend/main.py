@@ -1,4 +1,4 @@
-# # backend/main.py
+# # # backend/main.py
 # from fastapi import FastAPI
 # from fastapi.middleware.cors import CORSMiddleware
 # from dotenv import load_dotenv
@@ -72,38 +72,32 @@
 # async def health():
 #     return {"status": "ok"}
 
-# # backend/main.py
+# # # backend/main.py
+
+
+import os
+from time import sleep
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
-import os
-from time import sleep
 
-# Load .env only for local development
-if os.getenv("ENV") != "production":
+# Load .env ONLY when running locally (not in Cloud Run)
+if os.environ.get("K_SERVICE") is None:
     load_dotenv()
 
 from database import engine, Base
-import models  # noqa
+import models  # register models
 
 from routers import setup, resume, case_study, intro
 from routers import resume_ai, mock_interview, report
 
 app = FastAPI(
     title="AI Candidate Preparation Platform",
-    description="AI-powered interview prep: case studies, intro evaluation, and mock interviews",
+    description="AI-powered interview prep",
     version="1.0.0",
 )
 
-# Create tables on startup
-# @app.on_event("startup")
-# def startup():
-#     try:
-#         Base.metadata.create_all(bind=engine)
-#         print("Database connected and tables created")
-#     except Exception as e:
-#         print("Database connection failed:", e)
-
+# Create tables on startup with retry (important for Cloud SQL)
 @app.on_event("startup")
 def startup():
     for i in range(5):
@@ -115,7 +109,7 @@ def startup():
             print(f"Database connection failed (attempt {i+1}):", e)
             sleep(5)
 
-
+# Debug DB endpoint
 @app.get("/debug-db")
 def debug_db():
     from sqlalchemy import text
@@ -148,9 +142,9 @@ app.include_router(mock_interview.router)
 app.include_router(report.router)
 
 @app.get("/")
-async def root():
-    return {"message": "AI Candidate Preparation Platform API", "version": "1.0.0"}
+def root():
+    return {"message": "AI Candidate Preparation Platform API"}
 
 @app.get("/health")
-async def health():
+def health():
     return {"status": "ok"}
