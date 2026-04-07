@@ -5,7 +5,7 @@ import Link from "next/link";
 import toast from "react-hot-toast";
 import Webcam from "react-webcam";
 import { 
-  Send, Brain, Video, CameraOff, Camera, Play, Settings, Download, Loader2, ArrowLeft, Lightbulb
+  Send, Brain, Video, CameraOff, Camera, Play, Settings, Download, Loader2, ArrowLeft, Lightbulb, Volume2, VolumeX, Wand2
 } from "lucide-react";
 import { sendQuickChat, getStageQuestions, saveProjectBrief, getResumeSummary, getResumeAnalytics } from "@/lib/api";
 import { motion, AnimatePresence } from "framer-motion";
@@ -57,6 +57,9 @@ export default function RealisticInterviewPage() {
   const [showBriefModal, setShowBriefModal] = useState(false);
   const [briefPromptText, setBriefPromptText] = useState("");
   const [briefInput, setBriefInput] = useState("");
+  const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [selectedVoiceName, setSelectedVoiceName] = useState("");
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
   
   // Timer State
   const [timeLeft, setTimeLeft] = useState(120);
@@ -102,6 +105,27 @@ export default function RealisticInterviewPage() {
       })
       .catch(() => setCandidateName(localName || "Candidate"));
   }, [router]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.speechSynthesis) return;
+    const loadVoices = () => {
+      const voices = window.speechSynthesis.getVoices() || [];
+      const english = voices.filter((v) => /en|english/i.test(v.lang) || /english/i.test(v.name));
+      const finalVoices = english.length ? english : voices;
+      setAvailableVoices(finalVoices);
+      if (!selectedVoiceName && finalVoices.length > 0) {
+        const preferred =
+          finalVoices.find((v) => /female|samantha|zira|aria|google/i.test(v.name)) ||
+          finalVoices[0];
+        setSelectedVoiceName(preferred.name);
+      }
+    };
+    loadVoices();
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+    return () => {
+      window.speechSynthesis.onvoiceschanged = null;
+    };
+  }, [selectedVoiceName]);
 
   const handleStart = async () => {
     setIsGenerating(true);
@@ -160,16 +184,14 @@ export default function RealisticInterviewPage() {
   const addBotMessage = (text: string) => {
     setMessages(prev => [...prev, { sender: "bot", content: text }]);
     // Speak using TTS
-    if (typeof window !== "undefined" && window.speechSynthesis) {
+    if (voiceEnabled && typeof window !== "undefined" && window.speechSynthesis) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.onstart = () => setAiSpeaking(true);
       utterance.onend = () => setAiSpeaking(false);
       utterance.onerror = () => setAiSpeaking(false);
-      
-      const voices = window.speechSynthesis.getVoices();
-      const preferred = voices.find(v => v.name.includes("US") || v.name.includes("English")) || voices[0];
-      if (preferred) utterance.voice = preferred;
+      const voice = availableVoices.find((v) => v.name === selectedVoiceName);
+      if (voice) utterance.voice = voice;
       window.speechSynthesis.speak(utterance);
     }
   };
@@ -237,8 +259,10 @@ export default function RealisticInterviewPage() {
       }]);
       setAnsweredInStage(newCount);
       
-      if (typeof window !== "undefined" && window.speechSynthesis) {
+      if (voiceEnabled && typeof window !== "undefined" && window.speechSynthesis) {
         const utterance = new SpeechSynthesisUtterance(replyText);
+        const voice = availableVoices.find((v) => v.name === selectedVoiceName);
+        if (voice) utterance.voice = voice;
         window.speechSynthesis.speak(utterance);
       }
     } catch (err: any) {
@@ -317,6 +341,53 @@ export default function RealisticInterviewPage() {
           </div>
         </motion.div>
 
+        <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-3">
+          <div className="lg:col-span-2 card" style={{ padding: "12px 16px" }}>
+            <div className="flex items-center gap-2 text-sm text-on-surface-variant">
+              <Wand2 size={16} className="text-primary-container" />
+              AI Voice and Interview Experience Controls
+            </div>
+          </div>
+          <div className="card" style={{ padding: "10px 12px" }}>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setVoiceEnabled((v) => !v)}
+                className="btn-secondary"
+                style={{ padding: "8px 10px", display: "inline-flex", alignItems: "center", gap: 6 }}
+              >
+                {voiceEnabled ? <Volume2 size={14} /> : <VolumeX size={14} />}
+                {voiceEnabled ? "Voice On" : "Voice Off"}
+              </button>
+              <select
+                value={selectedVoiceName}
+                onChange={(e) => setSelectedVoiceName(e.target.value)}
+                className="input-field"
+                style={{ padding: "8px 10px", fontSize: 12 }}
+              >
+                {availableVoices.map((v) => (
+                  <option key={v.name} value={v.name}>
+                    {v.name} ({v.lang})
+                  </option>
+                ))}
+              </select>
+              <button
+                className="btn-secondary"
+                style={{ padding: "8px 10px", fontSize: 12 }}
+                onClick={() => {
+                  if (!voiceEnabled || typeof window === "undefined" || !window.speechSynthesis) return;
+                  const u = new SpeechSynthesisUtterance("Hello, this is your selected interview voice.");
+                  const v = availableVoices.find((x) => x.name === selectedVoiceName);
+                  if (v) u.voice = v;
+                  window.speechSynthesis.cancel();
+                  window.speechSynthesis.speak(u);
+                }}
+              >
+                Test
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* Dynamic Split Screen Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 flex-grow">
           <AnimatePresence mode="wait">
@@ -392,9 +463,9 @@ export default function RealisticInterviewPage() {
               </button>
             </motion.div>
           ) : (
-            <motion.div key="stageActive" initial={{opacity:0, x:20}} animate={{opacity:1, x:0}} exit={{opacity:0, x:-20}} className="lg:col-span-12 grid grid-cols-1 lg:grid-cols-12 gap-8 flex-grow">
+            <motion.div key="stageActive" initial={{opacity:0, x:20}} animate={{opacity:1, x:0}} exit={{opacity:0, x:-20}} className="lg:col-span-12 grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow">
               {/* Left side: Dual Video Interface */}
-              <div className="lg:col-span-8 flex flex-col gap-6">
+              <div className="lg:col-span-8 flex flex-col gap-5">
                 {/* Status bar */}
                 <div className="flex justify-between items-center px-4 py-3 bg-surface-container-high/50 backdrop-blur-md rounded-xl border border-outline-variant/30 shadow-lg">
                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-container/20 text-on-surface border border-primary-container/30 text-sm font-bold tracking-wide">
@@ -481,9 +552,9 @@ export default function RealisticInterviewPage() {
                 </div>
 
                 {/* Messages Container */}
-                <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6 bg-transparent">
+                <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-5 bg-transparent">
                   {messages.map((m, i) => (
-                    <motion.div initial={{opacity:0, y:10}} animate={{opacity:1, y:0}} key={i} className={`max-w-[88%] p-4 text-[14.5px] font-medium leading-relaxed shadow-lg flex flex-col gap-2 ${m.sender === 'user' ? 'self-end bg-gradient-to-br from-primary-container to-secondary-container text-white rounded-t-2xl rounded-bl-2xl border border-white/10' : 'self-start bg-surface-container-lowest/80 text-on-surface rounded-t-2xl rounded-br-2xl border border-outline-variant/50 backdrop-blur-md'}`}>
+                    <motion.div initial={{opacity:0, y:10}} animate={{opacity:1, y:0}} key={i} className={`max-w-[92%] p-4 text-[14px] font-medium leading-relaxed shadow-lg flex flex-col gap-2 ${m.sender === 'user' ? 'self-end bg-gradient-to-br from-primary-container to-secondary-container text-white rounded-t-2xl rounded-bl-2xl border border-white/10' : 'self-start bg-surface-container-lowest/90 text-on-surface rounded-t-2xl rounded-br-2xl border border-outline-variant/50 backdrop-blur-md'}`}>
                       {m.sender === "bot" && (
                         <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-on-surface-variant">
                           <img src="/logo.png" alt="WBL bot" className="w-7 h-7 rounded-full border border-primary-container/50 bg-surface p-1 shadow-[0_0_10px_rgba(139,92,246,0.35)]" />
@@ -517,7 +588,7 @@ export default function RealisticInterviewPage() {
                 </div>
 
                 {/* Input Area */}
-                <div className="p-5 bg-surface-container-lowest/50 backdrop-blur-xl border-t border-outline-variant/30">
+                <div className="p-4 bg-surface-container-lowest/50 backdrop-blur-xl border-t border-outline-variant/30">
                   {(currentStage === 5 || currentStage === 6) && (
                     <div className="mb-3 flex gap-2">
                       {currentStage === 5 && (
@@ -538,7 +609,7 @@ export default function RealisticInterviewPage() {
                       onChange={(e) => setAnswer(e.target.value)}
                       placeholder={currentStage === 1 ? "Give your intro..." : "Type your response..."}
                       className="w-full bg-surface-container-high border border-outline-variant/50 rounded-2xl py-4 pl-5 pr-14 text-[15px] font-medium text-on-surface focus:ring-2 focus:ring-primary-container focus:border-transparent transition-all outline-none resize-none shadow-inner"
-                      rows={2}
+                      rows={3}
                       disabled={loading}
                       onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                     />
