@@ -200,9 +200,6 @@ async def evaluate_answer_and_followup(request: EvaluateAnswerRequest, db: Sessi
     Candidate Answer: "{request.user_answer}"
     
     Evaluate the candidate's answer structurally. Generate a concise Ideal Answer first, then compare.
-    If the candidate seems unsure, blank, or asks for help, acknowledge that naturally and provide an expected answer before moving forward.
-    For stage "Technical Panel", be stricter and score like a real top-company panel.
-    For stage "AI Intro Test", only evaluate intro quality against intro expectations (name, role, experience, strengths, goal).
     Return ONLY valid JSON matching this exact schema (no markdown formatting):
     {{
       "scores": {{
@@ -302,13 +299,6 @@ async def get_stage_questions(session_id: str, db: Session = Depends(get_db)):
     Based on the first project in the project highlight, craft exactly 6 tailored interview questions as a pure JSON array containing 6 strings.
     Avoid generic wording. Questions must be concrete and tied to this candidate context.
     The 6 questions must all be different from each other (no repeats, no paraphrased duplicates).
-    Stage rules:
-    1) AI Intro Test: intro only, no technical deep-dive.
-    2) Topic Mocks: technical concept from project stack.
-    3) Hiring Manager: generic IT company style questions; can mix technical + behavioral and must reference project context.
-    4) Technical Panel: realistic, strict, standard-company technical interview style.
-    5) System Design: realistic architecture/tradeoff question tied to project domain.
-    6) Coding: practical coding task tied to project stack; can be solved in 10-20 minutes.
     
     [
       "AI Intro Test: Ask them to explain the first project in one minute including business problem and measurable impact.",

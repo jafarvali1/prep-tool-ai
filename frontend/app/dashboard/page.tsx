@@ -18,13 +18,6 @@ import {
 } from "lucide-react";
 
 export default function DashboardPage() {
-  const normalizeName = (name: string) => {
-    const bad = ["candidate", "professional experience", "experience", "resume"];
-    const n = (name || "").trim();
-    if (!n) return "";
-    if (bad.includes(n.toLowerCase())) return "";
-    return n;
-  };
   const router = useRouter();
   const [sessionId, setSessionId] = useState("");
   const [provider, setProvider] = useState("openai");
@@ -34,13 +27,6 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [analytics, setAnalytics] = useState<any>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(true);
-  const normalizeProjects = (projects: any[] = []) =>
-    projects.map((p) => ({
-      company: p?.company || "",
-      name: p?.name || "",
-      date: p?.date || "",
-      desc: (p?.desc || "").split("\n").slice(0, 2).join(" ").trim(),
-    }));
 
   useEffect(() => {
     const sid = localStorage.getItem("session_id");
@@ -56,24 +42,22 @@ export default function DashboardPage() {
       .then((data) => {
         setWordCount(data.word_count);
         setResumePreview(data.resume_text.slice(0, 400));
-        const cleaned = normalizeName(data.candidate_name || "");
-        if (cleaned) {
-          localStorage.setItem("candidate_name", cleaned);
-          setCandidateName(cleaned);
+        if (data.candidate_name) {
+          localStorage.setItem("candidate_name", data.candidate_name);
+          setCandidateName(data.candidate_name);
         } else {
-          setCandidateName(normalizeName(localStorage.getItem("candidate_name") || ""));
+          setCandidateName(localStorage.getItem("candidate_name") || "");
         }
         setLoading(false);
       })
       .catch(() => {
-        setCandidateName(normalizeName(localStorage.getItem("candidate_name") || ""));
+        setCandidateName(localStorage.getItem("candidate_name") || "");
         setLoading(false);
       });
 
     // Load rich analytics
     getResumeAnalytics(sid)
       .then((data) => {
-        if (data?.projects) data.projects = normalizeProjects(data.projects);
         setAnalytics(data);
         setAnalyticsLoading(false);
       })
@@ -384,7 +368,7 @@ export default function DashboardPage() {
                           }}
                         >
                           <h4 style={{ fontSize: 15, fontWeight: 600 }}>
-                            {proj.company ? `${proj.company} — ${proj.name || ""}` : (proj.name || "")}
+                            {proj.name}
                           </h4>
                           <span
                             style={{
@@ -394,7 +378,9 @@ export default function DashboardPage() {
                               padding: "2px 8px",
                               borderRadius: 10,
                             }}
-                          >{proj.date || ""}</span>
+                          >
+                            {proj.date}
+                          </span>
                         </div>
                         <p
                           style={{
@@ -403,7 +389,7 @@ export default function DashboardPage() {
                             lineHeight: 1.5,
                           }}
                         >
-                          {proj.desc || ""}
+                          {proj.desc}
                         </p>
                       </div>
                     ))
