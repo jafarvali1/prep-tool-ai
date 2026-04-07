@@ -1,9 +1,12 @@
 import axios from "axios";
 
 const isProd = process.env.NODE_ENV === "production";
-const API_BASE = isProd 
-  ? "https://ai-backend-560359652969.us-central1.run.app" 
-  : "http://localhost:8000";
+let API_BASE = "http://127.0.0.1:8000";
+if (process.env.NODE_ENV === "production") {
+  API_BASE = "https://ai-backend-560359652969.us-central1.run.app";
+} else if (typeof window !== "undefined" && window.location.hostname !== "localhost") {
+  API_BASE = `http://${window.location.hostname}:8000`;
+}
 
 const api = axios.create({
   baseURL: API_BASE,
@@ -29,6 +32,11 @@ export async function uploadResume(sessionId: string, file: File) {
 
 export async function getResumeSummary(sessionId: string) {
   const res = await api.get("/api/resume/summary", { params: { session_id: sessionId } });
+  return res.data;
+}
+
+export async function getResumeAnalytics(sessionId: string) {
+  const res = await api.get("/api/resume/analytics", { params: { session_id: sessionId } });
   return res.data;
 }
 
@@ -132,7 +140,6 @@ export async function getInterviewAnswers(sessionId: string, mockSessionId: numb
   return res.data;
 }
 
-// ─── Final Report ─────────────────────────────────────────────
 export async function generateReport(sessionId: string) {
   const res = await api.post("/api/report/generate", { session_id: sessionId });
   return res.data;
@@ -140,5 +147,21 @@ export async function generateReport(sessionId: string) {
 
 export async function getLatestReport(sessionId: string) {
   const res = await api.get("/api/report/latest", { params: { session_id: sessionId } });
+  return res.data;
+}
+
+export async function getStageQuestions(sessionId: string) {
+  const res = await api.get("/api/mock-interview/stage-questions", { params: { session_id: sessionId } });
+  return res.data;
+}
+
+export async function sendQuickChat(sessionId: string, currentQuestion: string, userAnswer: string, stageName: string, previousContext: string = "") {
+  const res = await api.post("/api/mock-interview/evaluate-answer", {
+    session_id: sessionId,
+    current_question: currentQuestion,
+    user_answer: userAnswer,
+    stage_name: stageName,
+    previous_context: previousContext
+  });
   return res.data;
 }

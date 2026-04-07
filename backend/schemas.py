@@ -48,3 +48,10 @@ class IntroAttemptItem(BaseModel):
 
     class Config:
         from_attributes = True
+
+class ResumeAnalyticsResponse(BaseModel):
+    session_id: str
+    keywords: list[str]
+    improvements: list[str]
+    projects: list[dict] # { "name": ..., "date": ..., "desc": ... }
+    sample_intro: str

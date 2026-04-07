@@ -1,11 +1,35 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
+@theme {
+  --color-primary: #0a0a0f;
+  --color-secondary: #0d1117;
+  --color-tertiary: #16161f;
+  --color-surface: #0a0a0f;
+  --color-surface-bright: #111118;
+  --color-surface-container-lowest: #050508;
+  --color-surface-container-low: #0a0a0f;
+  --color-surface-container: #111118;
+  --color-surface-container-high: #16161f;
+  --color-surface-container-highest: #1c1c28;
+  --color-on-surface: #f0f0ff;
+  --color-on-surface-variant: #9090b0;
+  --color-outline: #5a5a7a;
+  --color-outline-variant: rgba(255, 255, 255, 0.08);
+  --color-error: #ef4444;
+  --color-on-primary: #ffffff;
+  --color-on-secondary: #ffffff;
+  --color-on-tertiary: #ffffff;
+  --color-primary-container: #8b5cf6;
+  --color-secondary-container: #7c3aed;
+  --color-on-primary-container: #ffffff;
+}
+
 :root {
   --bg-primary: #0a0a0f;
   --bg-secondary: #111118;
-  --bg-card: #16161f;
-  --bg-card-hover: #1c1c28;
+  --bg-card: rgba(22, 22, 31, 0.6);
+  --bg-card-hover: rgba(28, 28, 40, 0.8);
   --border: rgba(255, 255, 255, 0.08);
   --border-accent: rgba(139, 92, 246, 0.4);
   --text-primary: #f0f0ff;
@@ -261,4 +285,17 @@ select.input-field option {
   height: 800px;
   background: radial-gradient(circle, rgba(139,92,246,0.12) 0%, transparent 70%);
   pointer-events: none;
+}
+
+@media print {
+  header, nav, .lg\:col-span-8, button {
+    display: none !important;
+  }
+  body, main {
+    background: white !important;
+  }
+  #printable-transcript {
+    width: 100% !important;
+    max-width: none !important;
+  }
 }

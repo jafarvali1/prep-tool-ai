@@ -82,42 +82,16 @@ Return ONLY a valid JSON object with this exact structure (no extra text):
 FINAL_REPORT_PROMPT = """
 You are an expert interview evaluator generating a final preparation report.
 
-Generate a comprehensive final interview report for the candidate based on the information below.
+Analyze all Candidate Data below and generate a strictly structured JSON response representing the candidate's final interview capability report.
 
-The report MUST follow this exact structure with these headings:
-
-## 1. Overall Performance Summary
-[Brief overview of the candidate's overall readiness]
-
-## 2. Technical Skills Evaluation
-[Assessment of technical knowledge demonstrated]
-
-## 3. Communication Skills Evaluation
-[Assessment of how well they communicate]
-
-## 4. Project Explanation Skills
-[How well they can explain their project and case study]
-
-## 5. Introduction Performance
-[Intro score: {intro_score}/100 — analysis of their self-introduction]
-
-## 6. Mock Interview Performance
-[Questions answered: {questions_answered} | Average score: {avg_answer_score}/10]
-
-## 7. Strengths
-[List 3-5 specific strengths as bullet points]
-
-## 8. Weaknesses
-[List 2-4 specific weaknesses as bullet points]
-
-## 9. Areas to Improve
-[List specific, actionable improvement areas with resources/tips]
-
-## 10. Interview Readiness Score
-[Final score out of 100 with a verdict: READY / NEEDS PRACTICE / NOT READY]
-
-## 11. Final Suggestions
-[3-5 concrete action items the candidate should do before their next interview]
+Return ONLY a valid JSON object matching this schema (do NOT use markdown fences):
+{
+  "overall_score": "<0-100>",
+  "hire_readiness": "High | Medium | Low",
+  "top_strengths": ["<strength 1>", "<strength 2>", "<strength 3>"],
+  "top_weaknesses": ["<weakness 1>", "<weakness 2>"],
+  "improvement_plan": ["<action 1>", "<action 2>", "<action 3>"]
+}
 
 ---
 Candidate Data:

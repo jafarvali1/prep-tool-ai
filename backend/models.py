@@ -14,6 +14,8 @@ class Candidate(Base):
     resume_text = Column(Text, nullable=True)
     resume_path = Column(String(255), nullable=True)
     candidate_name = Column(String(255), nullable=True)
+    total_tokens_used = Column(Integer, default=0)
+    total_requests = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
@@ -76,4 +78,13 @@ class FinalReport(Base):
     id = Column(Integer, primary_key=True, index=True)
     session_id = Column(String(255), index=True)
     content = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class ResumeAnalytics(Base):
+    __tablename__ = "resume_analytics"
+
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(String(255), index=True)
+    analytics_json = Column(Text, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)

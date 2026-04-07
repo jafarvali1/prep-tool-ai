@@ -84,42 +84,80 @@ async def validate_api_key(api_key: str, provider: str) -> dict:
     return result
 
 
-async def generate_text(prompt: str, api_key: str, provider: str) -> str:
-    """Generate text using the appropriate LLM."""
-    if provider == "openai":
-        client = get_openai_client(api_key)
-        response = await client.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are an expert career coach and technical interview preparation specialist.",
-                },
-                {"role": "user", "content": prompt},
-            ],
-            max_tokens=3000,
-            temperature=0.7,
-        )
-        return response.choices[0].message.content
+async def generate_text(prompt: str, api_key: str, provider: str, max_retries: int = 1) -> str:
+    """Generate text string."""
+    result = await generate_text_with_usage(prompt, api_key, provider, max_retries)
+    return result["content"]
 
-    elif provider == "gemini":
-        from google.genai import types
-        loop = asyncio.get_running_loop()
-        client = get_gemini_client(api_key)
-        response = await loop.run_in_executor(
-            None,
-            lambda: client.models.generate_content(
-                model="gemini-2.0-flash",
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    system_instruction="You are an expert career coach and technical interview preparation specialist.",
-                    max_output_tokens=3000,
-                ),
-            )
-        )
-        return response.text
+async def generate_text_with_usage(prompt: str, api_key: str, provider: str, max_retries: int = 1) -> dict:
+    """
+    Generate text using the appropriate LLM.
+    Returns: {"content": "...", "usage": {"tokens": 100}}
+    Includes 1 retry attempt for reliability.
+    """
+    last_error = None
+    
+    for attempt in range(max_retries + 1):
+        try:
+            if provider == "openai":
+                client = get_openai_client(api_key)
+                response = await client.chat.completions.create(
+                    model="gpt-4o",
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": "You are a highly structured expert career coach and technical interview evaluator.",
+                        },
+                        {"role": "user", "content": prompt},
+                    ],
+                    max_tokens=3000,
+                    temperature=0.7,
+                )
+                return {
+                    "content": response.choices[0].message.content,
+                    "usage": {
+                        "tokens": response.usage.total_tokens if response.usage else 0
+                    }
+                }
 
-    raise ValueError(f"Unsupported provider: {provider}")
+            elif provider == "gemini":
+                from google.genai import types
+                loop = asyncio.get_running_loop()
+                client = get_gemini_client(api_key)
+                response = await loop.run_in_executor(
+                    None,
+                    lambda: client.models.generate_content(
+                        model="gemini-2.0-flash",
+                        contents=prompt,
+                        config=types.GenerateContentConfig(
+                            system_instruction="You are a highly structured expert career coach and technical interview evaluator.",
+                            max_output_tokens=3000,
+                        ),
+                    )
+                )
+                
+                # Gemini usage metadata fallback
+                tokens = 0
+                if hasattr(response, 'usage_metadata') and response.usage_metadata:
+                    tokens = response.usage_metadata.total_token_count
+                    
+                return {
+                    "content": response.text,
+                    "usage": {
+                        "tokens": tokens
+                    }
+                }
+
+            raise ValueError(f"Unsupported provider: {provider}")
+
+        except Exception as e:
+            last_error = e
+            if attempt < max_retries:
+                await asyncio.sleep(1) # wait before retry
+            else:
+                break
+                
+    raise ValueError(f"LLM generation failed after {max_retries} retries: {str(last_error)}")
 
 
 async def speech_to_text(

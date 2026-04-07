@@ -61,7 +61,7 @@ async def generate_report(request: ReportRequest, db: Session = Depends(get_db))
     answer_scores = [float(a.overall_score or 0) for a in answers]
 
     try:
-        report_content = await generate_final_report(
+        raw_json_str = await generate_final_report(
             resume_text=candidate.resume_text or "",
             project_details=project_details,
             intro_score=intro_score_normalized,
@@ -70,6 +70,31 @@ async def generate_report(request: ReportRequest, db: Session = Depends(get_db))
             api_key=candidate.api_key,
             provider=candidate.api_provider,
         )
+        
+        # Coerce JSON into Markdown template
+        raw = raw_json_str.strip()
+        if raw.startswith("```json"):
+            raw = raw.split("```json")[1].split("```")[0]
+        elif raw.startswith("```"):
+            raw = raw.split("```")[1]
+            
+        data = json.loads(raw.strip())
+        
+        report_content = f"""
+## 1. Interview Readiness Verdict
+**Status:** {data.get("hire_readiness", "Unknown")}  
+**Overall Score:** {data.get("overall_score", 0)}/100
+
+## 2. Core Strengths
+{chr(10).join([f"- {s}" for s in data.get("top_strengths", [])])}
+
+## 3. Critical Weaknesses
+{chr(10).join([f"- {w}" for w in data.get("top_weaknesses", [])])}
+
+## 4. Specific Improvement Plan (Action Items)
+{chr(10).join([f"- {a}" for a in data.get("improvement_plan", [])])}
+        """
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Report generation failed: {str(e)}")
 

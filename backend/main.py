@@ -121,7 +121,13 @@ def debug_db():
 # CORS
 origins = [
     "http://localhost:3000",
-    "https://ai-frontend-560359652969.us-central1.run.app",
+    "http://localhost:3001",
+    "http://localhost:3002",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:3001",
+    "http://192.168.56.1:3000",
+    "http://192.168.56.1:3001",
+    "https://ai-frontend-560359652969.us-central1.run.app"
 ]
 
 app.add_middleware(
