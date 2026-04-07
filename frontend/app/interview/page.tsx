@@ -54,6 +54,9 @@ export default function RealisticInterviewPage() {
   });
   const [answeredInStage, setAnsweredInStage] = useState(0);
   const [readyForNextStage, setReadyForNextStage] = useState(false);
+  const [showBriefModal, setShowBriefModal] = useState(false);
+  const [briefPromptText, setBriefPromptText] = useState("");
+  const [briefInput, setBriefInput] = useState("");
   
   // Timer State
   const [timeLeft, setTimeLeft] = useState(120);
@@ -105,22 +108,11 @@ export default function RealisticInterviewPage() {
     try {
       const data = await getStageQuestions(sessionId);
       if (data?.needs_project_brief) {
-        const userBrief = window.prompt(
+        setBriefPromptText(
           data.briefing_prompt ||
-          "Please share your first project details: problem, stack, your role, and impact."
+            "Please share your first project details: problem, stack, your role, and impact."
         );
-        if (!userBrief || userBrief.trim().length < 40) {
-          toast.error("Please provide a detailed project brief to continue.");
-          return;
-        }
-        await saveProjectBrief(sessionId, userBrief.trim());
-        const refreshed = await getStageQuestions(sessionId);
-        if (!refreshed?.questions || refreshed.questions.length === 0) {
-          throw new Error("Could not generate questions after project brief.");
-        }
-        setDynamicStageQuestions(refreshed.questions);
-        setCurrentStage(1);
-        addBotMessage(refreshed.questions[0]);
+        setShowBriefModal(true);
         return;
       }
       if (data && data.questions && data.questions.length > 0) {
@@ -136,6 +128,32 @@ export default function RealisticInterviewPage() {
       toast.error("Failed to generate contextual questions.");
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleSubmitBriefAndStart = async () => {
+    if (!briefInput || briefInput.trim().length < 40) {
+      toast.error("Please provide a bit more detail.");
+      return;
+    }
+    try {
+      setLoading(true);
+      await saveProjectBrief(sessionId, briefInput.trim());
+      setShowBriefModal(false);
+      setBriefInput("");
+      const refreshed = await getStageQuestions(sessionId);
+      if (!refreshed?.questions || refreshed.questions.length === 0) {
+        throw new Error("Could not generate questions after project brief.");
+      }
+      setDynamicStageQuestions(refreshed.questions);
+      setCurrentStage(1);
+      setAnsweredInStage(0);
+      setReadyForNextStage(false);
+      addBotMessage(refreshed.questions[0]);
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to start interview from project brief.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -262,7 +280,7 @@ export default function RealisticInterviewPage() {
                   {candidateName ? candidateName.charAt(0).toUpperCase() : "U"}
                 </div>
               </div>
-              <div className="hidden md:flex flex-col leading-tight pr-2">
+              <div className="flex flex-col leading-tight pr-2">
                 <span className="text-[11px] text-on-surface-variant">Candidate</span>
                 <span className="text-sm text-on-surface">{candidateName || "Candidate"}</span>
               </div>
@@ -468,7 +486,7 @@ export default function RealisticInterviewPage() {
                     <motion.div initial={{opacity:0, y:10}} animate={{opacity:1, y:0}} key={i} className={`max-w-[88%] p-4 text-[14.5px] font-medium leading-relaxed shadow-lg flex flex-col gap-2 ${m.sender === 'user' ? 'self-end bg-gradient-to-br from-primary-container to-secondary-container text-white rounded-t-2xl rounded-bl-2xl border border-white/10' : 'self-start bg-surface-container-lowest/80 text-on-surface rounded-t-2xl rounded-br-2xl border border-outline-variant/50 backdrop-blur-md'}`}>
                       {m.sender === "bot" && (
                         <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-on-surface-variant">
-                          <img src="/logo.png" alt="WBL bot" className="w-5 h-5 rounded-full border border-primary-container/40 bg-surface p-0.5" />
+                          <img src="/logo.png" alt="WBL bot" className="w-7 h-7 rounded-full border border-primary-container/50 bg-surface p-1 shadow-[0_0_10px_rgba(139,92,246,0.35)]" />
                           WBL Interview Bot
                         </div>
                       )}
@@ -545,6 +563,26 @@ export default function RealisticInterviewPage() {
 
         </div>
       </main>
+
+      {showBriefModal && (
+        <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-xl card p-6">
+            <h3 className="text-xl mb-2">Project Context Needed</h3>
+            <p className="text-sm text-on-surface-variant mb-3">{briefPromptText}</p>
+            <textarea
+              className="w-full bg-surface-container-high border border-outline-variant/40 rounded-xl p-3 text-sm outline-none"
+              rows={6}
+              value={briefInput}
+              onChange={(e) => setBriefInput(e.target.value)}
+              placeholder="Describe company, project problem, users, stack, your role, and impact..."
+            />
+            <div className="mt-4 flex justify-end gap-2">
+              <button className="btn-secondary" onClick={() => setShowBriefModal(false)}>Cancel</button>
+              <button className="btn-primary" onClick={handleSubmitBriefAndStart}>Proceed</button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

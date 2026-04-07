@@ -29,6 +29,8 @@ Your goal is to write a deeply technical case study that keeps the EXACT technic
    Keep this concise and concrete.
 7. For agentic template, include named agents relevant to domain (e.g., resume analyst agent, policy query agent, claim triage agent, feedback agent).
 8. Keep it interview-ready and practical; avoid generic template-only text.
+9. Title must include project/company context, for example:
+   "## Case Study: <Template Theme> for <Company/Project Context>".
 
 Case Study Template (USE THIS FOR HEADINGS, STRUCTURE, & THE SYSTEM'S CORE ARCHITECTURE):
 {template_text}

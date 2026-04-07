@@ -17,6 +17,10 @@ export default function CaseStudyPage() {
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState<any[]>([]);
   const [viewingHistoryId, setViewingHistoryId] = useState<number | null>(null);
+  const [showContextModal, setShowContextModal] = useState(false);
+  const [inferredContext, setInferredContext] = useState("");
+  const [briefInput, setBriefInput] = useState("");
+  const [pendingTemplateKey, setPendingTemplateKey] = useState("mlops");
 
   useEffect(() => {
     const sid = localStorage.getItem("session_id");
@@ -54,28 +58,11 @@ export default function CaseStudyPage() {
           throw new Error("Failed to extract project from resume. Did you upload one?");
         }
 
-        const inferred = projectDetails.slice(0, 220).replace(/\s+/g, " ");
-        const ok = window.confirm(
-          `This is what I understood from your first project:\n\n${inferred}...\n\nProceed with this context?`
-        );
-        if (!ok) {
-          const userBrief = window.prompt(
-            "Please explain your project and company briefly (problem, users, workflow, stack, your role)."
-          );
-          if (!userBrief || userBrief.trim().length < 40) {
-            throw new Error("Please provide a more detailed project/company brief.");
-          }
-          await saveProjectBrief(sessionId, userBrief.trim());
-          projectDetails = userBrief.trim();
-          const confirmAgain = window.confirm(
-            `Updated understanding:\n\n${projectDetails.slice(0, 220)}...\n\nProceed now?`
-          );
-          if (!confirmAgain) {
-            throw new Error("Generation canceled by user.");
-          }
-        }
-        
-        data = await generateCaseStudyFromTemplate(sessionId, projectDetails, templateKey);
+        setPendingTemplateKey(templateKey);
+        setInferredContext(projectDetails);
+        setShowContextModal(true);
+        setLoading(false);
+        return;
       } else {
         data = await generateCaseStudy(sessionId, undefined);
       }
@@ -95,6 +82,23 @@ export default function CaseStudyPage() {
   const viewHistory = (item: any) => {
     setContent(item.content);
     setViewingHistoryId(item.id);
+  };
+
+  const generateWithContext = async (details: string, templateKey: string) => {
+    setLoading(true);
+    try {
+      const data = await generateCaseStudyFromTemplate(sessionId, details, templateKey);
+      setContent(data.content);
+      const h = await getCaseStudyHistory(sessionId);
+      setHistory(h.case_studies || []);
+      setShowContextModal(false);
+      setBriefInput("");
+      toast.success("Case study generated!");
+    } catch (err: any) {
+      toast.error(err.message || err?.response?.data?.detail || "Generation failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -242,6 +246,46 @@ export default function CaseStudyPage() {
           </div>
         </div>
       </div>
+      {showContextModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 90, padding: 20 }}>
+          <div className="card" style={{ width: "100%", maxWidth: 760, padding: 24 }}>
+            <h3 style={{ fontSize: 22, marginBottom: 8 }}>Project Context Confirmation</h3>
+            <p style={{ color: "var(--text-secondary)", fontSize: 14, marginBottom: 10 }}>
+              This is what I understood from your first project. Confirm to proceed, or provide your own brief.
+            </p>
+            <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid var(--border)", borderRadius: 12, padding: 14, marginBottom: 14, color: "var(--text-secondary)", maxHeight: 170, overflowY: "auto" }}>
+              {inferredContext}
+            </div>
+            <label className="label" style={{ marginBottom: 6 }}>Optional: Correct/override project + company brief</label>
+            <textarea
+              className="input-field"
+              rows={5}
+              value={briefInput}
+              onChange={(e) => setBriefInput(e.target.value)}
+              placeholder="Example: Innovapath recruitment platform; recruiter uploads JD and resumes, resume analyst agent ranks candidates..."
+            />
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 14 }}>
+              <button className="btn-secondary" onClick={() => setShowContextModal(false)}>Cancel</button>
+              <button
+                className="btn-secondary"
+                onClick={async () => {
+                  if (!briefInput.trim() || briefInput.trim().length < 40) {
+                    toast.error("Please provide more detail in your brief.");
+                    return;
+                  }
+                  await saveProjectBrief(sessionId, briefInput.trim());
+                  await generateWithContext(briefInput.trim(), pendingTemplateKey);
+                }}
+              >
+                Use My Brief
+              </button>
+              <button className="btn-primary" onClick={() => generateWithContext(inferredContext, pendingTemplateKey)}>
+                Proceed with This
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
