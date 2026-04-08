@@ -345,52 +345,54 @@ export default function RealisticInterviewPage() {
       <div className="pointer-events-none fixed bottom-10 right-0 h-64 w-64 rounded-full bg-secondary-container/15 blur-[80px]" aria-hidden />
 
       <header className="sticky top-0 z-50 border-b border-outline-variant/30 bg-surface/90 backdrop-blur-xl">
-        <div className="flex flex-wrap justify-between items-center gap-x-4 gap-y-3 w-full px-4 sm:px-6 lg:px-8 py-3.5 md:py-4 max-w-screen-2xl mx-auto">
-          <Link href="/dashboard" className="flex items-center gap-3 min-w-0 text-xl md:text-2xl font-bold tracking-tight text-on-surface no-underline">
-            <div className="w-10 h-10 md:w-11 md:h-11 rounded-xl bg-gradient-to-br from-primary-container to-secondary-container flex items-center justify-center shadow-lg ring-1 ring-primary-container/30">
-              <img src="/logo.png" alt="" className="w-6 h-6 object-contain" />
+        <div className="mx-auto flex w-full max-w-screen-2xl flex-wrap items-center justify-between gap-x-5 gap-y-4 px-4 py-4 sm:px-6 sm:py-4 lg:px-8">
+          <Link href="/dashboard" className="flex min-w-0 items-center gap-3 text-xl font-bold tracking-tight text-on-surface no-underline md:text-2xl">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary-container to-secondary-container shadow-lg ring-1 ring-primary-container/30 md:h-11 md:w-11">
+              <img src="/logo.png" alt="" className="h-6 w-6 object-contain" />
             </div>
             <span>WBL <span className="text-primary-container">PrepHub</span></span>
           </Link>
-          <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
-            <Link href="/dashboard" className="inline-flex items-center gap-2 text-xs md:text-sm px-3 py-2 rounded-lg border border-outline-variant/40 hover:border-primary-container/50 bg-surface-container-high/50 text-on-surface-variant hover:text-on-surface transition-colors">
-              <ArrowLeft size={14} /> Dashboard
+          <div className="flex flex-wrap items-center justify-end gap-2.5 sm:gap-3">
+            <Link href="/dashboard" className="inline-flex items-center gap-2 rounded-xl border border-outline-variant/40 bg-surface-container-high/50 px-3.5 py-2.5 text-xs font-medium text-on-surface-variant transition-colors hover:border-primary-container/50 hover:text-on-surface md:text-sm md:px-4">
+              <ArrowLeft size={16} className="shrink-0 opacity-80" aria-hidden />
+              Dashboard
             </Link>
-            <Link href="/setup" className="p-2 rounded-lg border border-outline-variant/40 bg-surface-container-high/50 text-on-surface-variant hover:text-on-surface hover:border-primary-container/50 transition-colors">
-              <Settings size={22} />
+            <Link href="/setup" className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-outline-variant/40 bg-surface-container-high/50 text-on-surface-variant transition-colors hover:border-primary-container/50 hover:text-on-surface md:h-11 md:w-11" aria-label="Setup">
+              <Settings size={20} className="md:h-[22px] md:w-[22px]" />
             </Link>
-            <div className="flex items-center gap-2.5 pl-1 pr-3 py-1 rounded-full border border-outline-variant/40 bg-surface-container-high">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-container to-secondary-container flex items-center justify-center text-on-primary-container text-sm font-bold">
+            <div className="flex items-center gap-3 rounded-full border border-outline-variant/40 bg-surface-container-high py-1.5 pl-1.5 pr-4">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary-container to-secondary-container text-sm font-bold text-on-primary-container">
                 {candidateName ? candidateName.charAt(0).toUpperCase() : "U"}
               </div>
-              <div className="flex flex-col leading-tight">
-                <span className="text-[10px] uppercase tracking-wide text-on-surface-variant">You</span>
-                <span className="text-sm font-medium text-on-surface">{candidateName || "Candidate"}</span>
+              <div className="min-w-0 leading-tight">
+                <span className="block text-[10px] font-medium uppercase tracking-wide text-on-surface-variant">You</span>
+                <span className="block max-w-[10rem] break-words text-sm font-semibold leading-snug text-on-surface sm:max-w-[14rem]">{candidateName || "Candidate"}</span>
               </div>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="relative z-10 flex-1 flex flex-col px-4 sm:px-6 lg:px-8 py-6 md:py-8 lg:py-10 max-w-screen-2xl mx-auto w-full gap-6 lg:gap-8">
+      <main className="relative z-10 mx-auto flex w-full max-w-screen-2xl flex-1 flex-col gap-6 px-4 pb-10 pt-12 sm:gap-7 sm:px-6 sm:pb-11 sm:pt-16 lg:gap-8 lg:px-8 lg:pb-12 lg:pt-20">
 
-        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="w-full rounded-2xl bg-surface-container-low/60 backdrop-blur-md px-3 py-4 sm:px-5 md:px-6 md:py-5 border border-outline-variant/50 shadow-lg overflow-x-auto overscroll-contain">
-          <div className="flex items-end justify-between gap-0 min-w-max pb-1">
+        {/* Stage progress — original position (top of main) */}
+        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="w-full overflow-x-auto overscroll-contain rounded-2xl border border-outline-variant/50 bg-surface-container-low/60 px-4 py-5 shadow-lg backdrop-blur-md sm:px-6 sm:py-6 md:px-8 md:py-7">
+          <div className="flex min-w-max items-end justify-between gap-0 pb-0.5">
             {STAGES.map((s, idx) => {
               const isActive = currentStage === s.id;
               const isPast = currentStage > s.id;
               return (
-                <div key={s.id} className="flex items-end flex-1 min-w-0">
-                  <div className="flex flex-col items-center gap-2 w-[4.25rem] sm:w-20 md:min-w-[5.5rem] shrink-0">
-                    <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-xs sm:text-sm font-semibold transition-all duration-300 shrink-0 ${isActive ? "bg-primary-container text-on-primary-container shadow-lg scale-105 ring-2 ring-primary-container ring-offset-2 ring-offset-surface" : isPast ? "bg-secondary-container text-on-secondary" : "bg-surface-container-highest text-on-surface-variant"}`}>
+                <div key={s.id} className="flex min-w-0 flex-1 items-end">
+                  <div className="flex w-[5rem] shrink-0 flex-col items-center gap-2.5 sm:w-24 md:w-28 lg:w-32">
+                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-semibold transition-all duration-300 sm:h-11 sm:w-11 sm:text-sm ${isActive ? "scale-105 bg-primary-container text-on-primary-container shadow-lg ring-2 ring-primary-container ring-offset-2 ring-offset-surface" : isPast ? "bg-secondary-container text-on-secondary" : "bg-surface-container-highest text-on-surface-variant"}`}>
                       {s.id}
                     </div>
-                    <span className={`text-[10px] sm:text-[11px] font-medium text-center leading-snug px-0.5 line-clamp-2 min-h-[2.25rem] ${isActive ? "text-primary-container font-bold" : isPast ? "text-on-surface font-bold" : "text-on-surface-variant"}`}>
+                    <span className={`w-full break-words px-1 text-center text-[10px] font-medium leading-snug sm:text-[11px] md:text-xs ${isActive ? "font-bold text-primary-container" : isPast ? "font-semibold text-on-surface" : "text-on-surface-variant"}`}>
                       {s.name}
                     </span>
                   </div>
                   {idx < STAGES.length - 1 && (
-                    <div className={`flex-1 h-px mx-1.5 sm:mx-3 mb-[1.35rem] min-w-[0.75rem] max-w-full self-end ${isPast ? "bg-gradient-to-r from-secondary-container to-primary-container" : "bg-outline-variant/30"}`} />
+                    <div className={`mx-2 mb-[1.6rem] h-px min-w-4 max-w-full flex-1 self-end sm:mx-3 ${isPast ? "bg-gradient-to-r from-secondary-container to-primary-container" : "bg-outline-variant/30"}`} />
                   )}
                 </div>
               );
@@ -398,30 +400,31 @@ export default function RealisticInterviewPage() {
           </div>
         </motion.div>
 
-        <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 items-stretch">
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="lg:col-span-2 rounded-2xl bg-surface-container-high/40 backdrop-blur-md p-5 md:p-6 border border-outline-variant/50 shadow-lg flex flex-col justify-center min-h-0">
+        {/* Voice row — original two-card layout */}
+        <div className="w-full grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="lg:col-span-2 rounded-2xl border border-outline-variant/50 bg-surface-container-high/40 p-5 shadow-lg backdrop-blur-md md:p-6">
             <div className="flex items-start gap-4">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary-container/20 border border-primary-container/30">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-primary-container/30 bg-primary-container/20">
                 <Headphones size={20} className="text-primary-container" />
               </div>
               <div className="min-w-0 pt-0.5">
-                <p className="font-semibold text-on-surface font-['Outfit'] text-base">Interviewer voice</p>
-                <p className="text-sm text-on-surface-variant mt-1.5 leading-relaxed">How the AI sounds when reading questions aloud.</p>
+                <p className="font-['Outfit'] text-base font-semibold text-on-surface">Interviewer voice</p>
+                <p className="mt-1.5 text-sm leading-relaxed text-on-surface-variant">How the AI sounds when reading questions aloud.</p>
               </div>
             </div>
           </motion.div>
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }} className="rounded-2xl bg-surface-container-high/40 backdrop-blur-md p-5 md:p-6 border border-outline-variant/50 shadow-lg flex flex-col justify-center min-h-0">
-            <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
-              <button type="button" onClick={() => setVoiceEnabled((v) => !v)} className="inline-flex items-center justify-center gap-2 rounded-xl border border-outline-variant/50 bg-surface-container-high px-3.5 py-2.5 text-xs font-semibold hover:border-primary-container/50 transition-colors shrink-0">
-                {voiceEnabled ? <Volume2 size={16} className="text-primary-container" /> : <VolumeX size={16} />}
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }} className="rounded-2xl border border-outline-variant/50 bg-surface-container-high/40 p-5 shadow-lg backdrop-blur-md md:p-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+              <button type="button" onClick={() => setVoiceEnabled((v) => !v)} className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-outline-variant/50 bg-surface-container-high px-4 py-2.5 text-xs font-semibold transition-colors hover:border-primary-container/50">
+                {voiceEnabled ? <Volume2 size={16} className="shrink-0 text-primary-container" aria-hidden /> : <VolumeX size={16} className="shrink-0" aria-hidden />}
                 {voiceEnabled ? "TTS on" : "TTS off"}
               </button>
-              <select value={selectedVoiceName} onChange={(e) => setSelectedVoiceName(e.target.value)} className="input-field flex-1 min-w-[140px] sm:min-w-[180px] rounded-xl text-xs py-2.5 px-3">
+              <select value={selectedVoiceName} onChange={(e) => setSelectedVoiceName(e.target.value)} className="input-field min-h-11 w-full min-w-0 flex-1 rounded-xl border border-outline-variant/50 px-3 py-2.5 text-xs sm:min-w-[160px]">
                 {availableVoices.map((v) => (
                   <option key={v.name} value={v.name}>{v.name} ({v.lang})</option>
                 ))}
               </select>
-              <button type="button" className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-outline-variant/50 bg-surface-container-high px-3.5 py-2.5 text-xs font-semibold text-on-surface hover:border-primary-container/50 transition-colors shrink-0" onClick={() => {
+              <button type="button" className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-outline-variant/50 bg-surface-container-high px-4 py-2.5 text-xs font-semibold text-on-surface transition-colors hover:border-primary-container/50" onClick={() => {
                 if (!voiceEnabled || typeof window === "undefined" || !window.speechSynthesis) return;
                 const u = new SpeechSynthesisUtterance("Hello, this is your selected interview voice.");
                 const v = availableVoices.find((x) => x.name === selectedVoiceName);
@@ -429,13 +432,14 @@ export default function RealisticInterviewPage() {
                 window.speechSynthesis.cancel();
                 window.speechSynthesis.speak(u);
               }}>
-                <Sparkles size={14} /> Test
+                <Sparkles size={14} className="shrink-0 text-primary-container" aria-hidden />
+                Test
               </button>
             </div>
           </motion.div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8 flex-1 min-h-0">
+        <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 md:gap-8 lg:grid-cols-12">
           <AnimatePresence mode="wait">
           {currentStage === 7 ? (
              <motion.div key="stage7" initial={{opacity:0, scale:0.98}} animate={{opacity:1, scale:1}} exit={{opacity:0}} className="lg:col-span-12 rounded-3xl bg-surface-container-low/40 backdrop-blur-2xl p-6 sm:p-8 lg:p-10 border border-outline-variant/50 shadow-2xl min-h-[50vh] mb-10 lg:mb-16 w-full">
@@ -444,8 +448,8 @@ export default function RealisticInterviewPage() {
                      <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold font-['Outfit'] text-on-surface bg-clip-text text-transparent bg-gradient-to-r from-on-surface to-on-surface-variant">Interview transcript</h2>
                      <p className="text-on-surface-variant text-sm md:text-base max-w-2xl leading-relaxed">Everything you practiced in this session, ready to save or print.</p>
                    </div>
-                   <button type="button" onClick={() => window.print()} className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-secondary-container to-primary-container text-on-primary px-5 sm:px-6 py-3 text-sm font-bold shadow-lg ring-1 ring-primary-container/40 hover:ring-primary-container/60 transition-all hover:-translate-y-0.5 shrink-0 w-full sm:w-auto">
-                       <Download size={18} /> Save as PDF
+                   <button type="button" onClick={() => window.print()} className="inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-secondary-container to-primary-container px-5 py-3 text-sm font-bold text-on-primary shadow-lg ring-1 ring-primary-container/40 transition-all hover:-translate-y-0.5 hover:ring-primary-container/60 sm:w-auto sm:px-6">
+                       <Download size={18} aria-hidden /> Save as PDF
                    </button>
                </div>
                <div className="space-y-6 lg:space-y-8" id="printable-transcript">
@@ -456,7 +460,7 @@ export default function RealisticInterviewPage() {
                                {t.chat.map((m: any, mIdx: number) => (
                                    <div key={mIdx} className={`rounded-2xl px-4 py-4 sm:px-5 sm:py-4 shadow-sm ${m.sender === 'bot' ? 'bg-surface border border-outline-variant/20 text-left' : 'bg-primary-container/10 border border-primary-container/30 text-right ml-6 sm:ml-12 md:ml-20 max-w-full'}`}>
                                        <span className={`text-[10px] font-bold uppercase tracking-wider block mb-2 ${m.sender === 'bot' ? 'text-secondary-container' : 'text-primary-container'}`}>{m.sender === 'bot' ? 'Interviewer' : `${candidateName || 'You'}`}</span>
-                                       <p className="text-[15px] text-on-surface leading-relaxed whitespace-pre-wrap break-words">{m.content}</p>
+                                       <p className="text-[15px] leading-relaxed text-on-surface whitespace-pre-wrap break-words">{m.content}</p>
                                    </div>
                                ))}
                            </div>
@@ -465,99 +469,108 @@ export default function RealisticInterviewPage() {
                </div>
            </motion.div>
           ) : currentStage === 0 ? (
-            <motion.div key="stage0" initial={{opacity:0, scale:0.98}} animate={{opacity:1, scale:1}} exit={{opacity:0, y:-12}} className="lg:col-span-12 flex flex-col items-center text-center rounded-3xl bg-surface-container-lowest/35 backdrop-blur-md px-6 py-14 md:p-20 border border-outline-variant/30 shadow-2xl min-h-[52vh] relative overflow-hidden">
-              <div className="absolute -top-40 -right-40 w-[28rem] h-[28rem] bg-primary-container/20 rounded-full blur-[100px] pointer-events-none" />
-              <div className="absolute -bottom-40 -left-40 w-[28rem] h-[28rem] bg-secondary-container/20 rounded-full blur-[100px] pointer-events-none" />
-              <div className="relative flex h-20 w-20 items-center justify-center rounded-2xl bg-primary-container/20 border border-primary-container/30 mb-8 shadow-lg ring-1 ring-primary-container/25">
-                <Video size={40} className="text-primary-container" />
+            <motion.div key="stage0" initial={{opacity:0, scale:0.98}} animate={{opacity:1, scale:1}} exit={{opacity:0, y:-12}} className="relative flex min-h-[52vh] flex-col items-center overflow-hidden rounded-3xl border border-outline-variant/30 bg-surface-container-lowest/35 px-6 py-14 text-center shadow-2xl backdrop-blur-md md:p-20 lg:col-span-12">
+              <div className="pointer-events-none absolute -right-40 -top-40 h-[28rem] w-[28rem] rounded-full bg-primary-container/20 blur-[100px]" />
+              <div className="pointer-events-none absolute -bottom-40 -left-40 h-[28rem] w-[28rem] rounded-full bg-secondary-container/20 blur-[100px]" />
+              <div className="relative mb-8 flex h-20 w-20 items-center justify-center rounded-2xl border border-primary-container/30 bg-primary-container/20 shadow-lg ring-1 ring-primary-container/25">
+                <Video size={40} className="text-primary-container" aria-hidden />
               </div>
-              <h2 className="relative text-3xl md:text-5xl font-bold font-['Outfit'] tracking-tight mb-4 text-on-surface bg-clip-text text-transparent bg-gradient-to-r from-on-surface to-on-surface-variant">Start your mock interview</h2>
-              <p className="relative text-on-surface-variant mb-14 md:mb-16 max-w-lg text-base md:text-lg leading-relaxed">
+              <h2 className="relative mb-4 max-w-2xl font-['Outfit'] text-3xl font-bold tracking-tight text-on-surface bg-gradient-to-r from-on-surface to-on-surface-variant bg-clip-text text-transparent md:text-5xl">Start your mock interview</h2>
+              <p className="relative mb-12 max-w-lg text-base leading-relaxed text-on-surface-variant md:mb-14 md:text-lg">
                 Six stages tailored to your resume — intro through coding. Adjust question counts, then step in when you are ready.
               </p>
-              <div className="relative w-full max-w-2xl mb-14 md:mb-16 pt-2 grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6 text-left">
-                <label className="block text-base sm:text-lg font-medium text-on-surface">Mock section
-                  <select className="mt-2 w-full min-h-11 py-2.5 px-3 rounded-xl bg-surface-container-high border border-outline-variant/50 outline-none text-on-surface text-sm" value={stageCounts[2]} onChange={(e) => setStageCounts((p) => ({ ...p, 2: Number(e.target.value) }))}>
+              <div className="relative my-10 w-full max-w-2xl text-left sm:my-12 md:my-14">
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-x-8 sm:gap-y-7">
+                <label className="block text-base font-medium text-on-surface sm:text-lg">Mock section
+                  <select className="mt-2 w-full min-h-11 rounded-xl border border-outline-variant/50 bg-surface-container-high px-3.5 py-2.5 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary-container/40" value={stageCounts[2]} onChange={(e) => setStageCounts((p) => ({ ...p, 2: Number(e.target.value) }))}>
                     <option value={10}>10 questions</option>
                     <option value={20}>20 questions</option>
                     <option value={30}>30 questions</option>
                   </select>
                 </label>
-                <label className="block text-base sm:text-lg font-medium text-on-surface">Hiring manager
-                  <select className="mt-2 w-full min-h-11 py-2.5 px-3 rounded-xl bg-surface-container-high border border-outline-variant/50 outline-none text-on-surface text-sm" value={stageCounts[3]} onChange={(e) => setStageCounts((p) => ({ ...p, 3: Number(e.target.value) }))}>
+                <label className="block text-base font-medium text-on-surface sm:text-lg">Hiring manager
+                  <select className="mt-2 w-full min-h-11 rounded-xl border border-outline-variant/50 bg-surface-container-high px-3.5 py-2.5 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary-container/40" value={stageCounts[3]} onChange={(e) => setStageCounts((p) => ({ ...p, 3: Number(e.target.value) }))}>
                     <option value={5}>5 questions</option>
                     <option value={10}>10 questions</option>
                   </select>
                 </label>
-                <label className="block text-base sm:text-lg font-medium text-on-surface">Technical panel
-                  <select className="mt-2 w-full min-h-11 py-2.5 px-3 rounded-xl bg-surface-container-high border border-outline-variant/50 outline-none text-on-surface text-sm" value={stageCounts[4]} onChange={(e) => setStageCounts((p) => ({ ...p, 4: Number(e.target.value) }))}>
+                <label className="block text-base font-medium text-on-surface sm:text-lg">Technical panel
+                  <select className="mt-2 w-full min-h-11 rounded-xl border border-outline-variant/50 bg-surface-container-high px-3.5 py-2.5 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary-container/40" value={stageCounts[4]} onChange={(e) => setStageCounts((p) => ({ ...p, 4: Number(e.target.value) }))}>
                     <option value={10}>10 questions</option>
                     <option value={20}>20 questions</option>
                     <option value={30}>30 questions</option>
                   </select>
                 </label>
-                <label className="block text-base sm:text-lg font-medium text-on-surface">System design / coding
-                  <select className="mt-2 w-full min-h-11 py-2.5 px-3 rounded-xl bg-surface-container-high border border-outline-variant/50 outline-none text-on-surface text-sm" value={stageCounts[5]} onChange={(e) => setStageCounts((p) => ({ ...p, 5: Number(e.target.value), 6: Number(e.target.value) }))}>
+                <label className="block text-base font-medium text-on-surface sm:text-lg">System design / coding
+                  <select className="mt-2 w-full min-h-11 rounded-xl border border-outline-variant/50 bg-surface-container-high px-3.5 py-2.5 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary-container/40" value={stageCounts[5]} onChange={(e) => setStageCounts((p) => ({ ...p, 5: Number(e.target.value), 6: Number(e.target.value) }))}>
                     <option value={1}>1 each</option>
                     <option value={2}>2 each</option>
                   </select>
                 </label>
+                </div>
               </div>
-              <button type="button" disabled={isGenerating} onClick={handleStart} className="relative mt-4 md:mt-6 flex gap-3 items-center justify-center rounded-2xl bg-surface-container-high border border-outline-variant text-on-surface px-10 py-4 md:py-5 text-base md:text-lg font-bold hover:border-primary-container hover:shadow-lg hover:ring-1 hover:ring-primary-container/35 transition-all duration-300 disabled:opacity-45">
-                <span className="relative z-10 flex h-8 w-50 justify-center items-center  gap-2">
-                  {isGenerating ? <><Loader2 className="w-5 h-5 animate-spin" /> Preparing…</> : <><Play size={20} /> Begin session</>}
-                </span>
+              <button type="button" disabled={isGenerating} onClick={handleStart} className="relative mt-10 inline-flex min-h-11 min-w-[200px] items-center justify-center gap-3 rounded-2xl border border-outline-variant bg-surface-container-high px-10 py-4 text-base font-bold text-on-surface transition-all duration-300 hover:border-primary-container hover:shadow-lg hover:ring-1 hover:ring-primary-container/35 disabled:opacity-45 md:mt-12 md:py-5 md:text-lg">
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="h-5 w-5 shrink-0 animate-spin" aria-hidden />
+                    Preparing…
+                  </>
+                ) : (
+                  <>
+                    <Play size={22} className="shrink-0" aria-hidden />
+                    Begin session
+                  </>
+                )}
               </button>
             </motion.div>
           ) : (
-            <motion.div key="stageActive" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} className="lg:col-span-12 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
-              {/* Chat — primary (7 cols) */}
-              <div className="order-1 lg:col-span-7 flex flex-col min-h-0 min-w-0 rounded-3xl bg-surface-container-high/45 backdrop-blur-xl border border-outline-variant/35 shadow-2xl overflow-hidden max-h-[min(620px,calc(100dvh-8rem))] lg:max-h-none lg:min-h-[560px]">
-                <div className="px-5 py-5 md:px-7 md:py-6 flex flex-wrap items-start justify-between gap-4 shrink-0 bg-surface-container-lowest/40 border-b border-outline-variant/25">
-                  <div className="flex gap-4 min-w-0">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-secondary-container/25 border border-secondary-container/40">
-                      <MessageSquare size={22} className="text-primary-container" />
+            <motion.div key="stageActive" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} className="grid grid-cols-1 items-start gap-6 lg:col-span-12 lg:grid-cols-12 lg:gap-8">
+              <div className="order-1 flex max-h-[min(620px,calc(100dvh-8rem))] min-h-0 min-w-0 flex-col overflow-hidden rounded-3xl border border-outline-variant/35 bg-surface-container-high/45 shadow-2xl backdrop-blur-xl lg:col-span-7 lg:max-h-none lg:min-h-[560px]">
+                <div className="flex shrink-0 flex-col gap-5 border-b border-outline-variant/25 bg-surface-container-lowest/40 px-6 py-7 sm:flex-row sm:items-start sm:justify-between sm:gap-6 md:px-8 md:py-8">
+                  <div className="flex min-w-0 gap-4 md:gap-5">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-secondary-container/40 bg-secondary-container/25 md:h-[3.25rem] md:w-[3.25rem]">
+                      <MessageSquare size={22} className="text-primary-container" aria-hidden />
                     </div>
-                    <div>
-                      <h3 className="font-semibold text-lg md:text-xl font-['Outfit'] text-on-surface">Conversation</h3>
-                      <p className="text-sm text-on-surface-variant mt-0.5 leading-relaxed">Type or use the mic — speech becomes text in the box.</p>
+                    <div className="min-w-0 space-y-2.5 pt-0.5 md:space-y-3">
+                      <h3 className="font-['Outfit'] text-lg font-semibold text-on-surface md:text-xl">Conversation</h3>
+                      <p className="text-sm leading-relaxed text-on-surface-variant md:text-[15px] md:leading-relaxed">Type or use the mic — speech becomes text in the box.</p>
                     </div>
                   </div>
-                  <button type="button" onClick={nextStage} disabled={loading} className={`shrink-0 rounded-xl text-[11px] uppercase tracking-widest font-bold px-4 py-2.5 border transition-all ${readyForNextStage ? "text-on-primary-container border-primary-container bg-primary-container shadow-lg ring-1 ring-primary-container/50" : "text-primary-container border-primary-container/35 bg-surface-container-high/50 hover:bg-primary-container/15"} disabled:opacity-45`}>
+                  <button type="button" onClick={nextStage} disabled={loading} className={`w-full shrink-0 whitespace-normal rounded-xl border px-5 py-3.5 text-center text-[11px] font-bold uppercase leading-snug tracking-wide transition-all sm:w-auto sm:min-w-[8.5rem] sm:self-start md:px-6 ${readyForNextStage ? "border-primary-container bg-primary-container text-on-primary-container shadow-lg ring-1 ring-primary-container/50" : "border-primary-container/35 bg-surface-container-high/50 text-primary-container hover:bg-primary-container/15"} disabled:opacity-45`}>
                     Next stage
                   </button>
                 </div>
-                <div className="mx-5 md:mx-7 mb-2 shrink-0 rounded-xl bg-primary-container/8 border border-primary-container/20 px-4 py-3 flex gap-3 items-start">
-                  <Lightbulb size={18} className="text-primary-container shrink-0 mt-0.5" />
-                  <p className="text-sm text-on-surface-variant leading-relaxed">
+                <div className="mx-5 mb-1 mt-6 flex shrink-0 items-start gap-4 rounded-xl border border-primary-container/20 bg-primary-container/8 px-5 py-4 md:mx-8 md:mb-2 md:mt-8 md:gap-4 md:px-6 md:py-5">
+                  <Lightbulb size={20} className="mt-0.5 shrink-0 text-primary-container" aria-hidden />
+                  <p className="min-w-0 text-sm leading-relaxed text-on-surface-variant md:text-[15px] md:leading-relaxed">
                     {currentStage === 1 && "Intro only: your name, background, strengths, and goal."}
                     {currentStage === 3 && "Hiring manager: behavioral and project-focused questions."}
                     {currentStage === 4 && "Technical panel: rigorous, interview-standard depth."}
                     {currentStage !== 1 && currentStage !== 3 && currentStage !== 4 && "Answer with a clear structure."}
                   </p>
                 </div>
-                <div className="flex-1 min-h-0 overflow-y-auto px-5 md:px-7 py-4 flex flex-col gap-7">
+                <div className="flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto px-5 py-7 md:gap-10 md:px-8 md:py-8">
                   {messages.map((m, i) => (
-                    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} key={i} className={`flex w-full ${m.sender === "user" ? "justify-end" : "justify-start"}`}>
-                      <div className={`max-w-[min(94%,32rem)] rounded-2xl px-5 py-4 md:py-5 shadow-lg ${m.sender === "user" ? "rounded-br-md bg-gradient-to-br from-primary-container to-secondary-container text-on-primary-container border border-on-primary-container/15" : "rounded-bl-md bg-surface-container-lowest/95 text-on-surface border border-outline-variant/50 backdrop-blur-md"}`}>
+                    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} key={i} className="w-full min-w-0">
+                      <div className={`w-full min-w-0 rounded-2xl px-6 py-6 shadow-lg md:px-7 md:py-7 ${m.sender === "user" ? "rounded-br-md border border-on-primary-container/15 bg-gradient-to-br from-primary-container to-secondary-container text-on-primary-container" : "rounded-bl-md border border-outline-variant/50 bg-surface-container-lowest/95 text-on-surface backdrop-blur-md"}`}>
                         {m.sender === "bot" && (
-                          <div className="flex items-center gap-2 mb-3">
-                            <img src="/logo.png" alt="" className="w-7 h-7 rounded-full border border-primary-container/50 bg-surface p-1 object-contain" />
+                          <div className="mb-5 flex flex-wrap items-center gap-3">
+                            <img src="/logo.png" alt="" className="h-7 w-7 shrink-0 rounded-full border border-primary-container/50 bg-surface p-1 object-contain" />
                             <span className="text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant">Interviewer</span>
                           </div>
                         )}
-                        {m.sender === "user" && <span className="text-[10px] font-semibold uppercase tracking-wider text-on-primary-container/80 block mb-2 text-right">You</span>}
-                        <div className={`text-[15px] leading-[1.65] whitespace-pre-wrap ${m.sender === "user" ? "text-on-primary-container" : "text-on-surface"}`}>{m.content}</div>
+                        {m.sender === "user" && <span className="mb-4 block text-right text-[10px] font-semibold uppercase tracking-wider text-on-primary-container/80">You</span>}
+                        <div className={`min-w-0 text-[15px] leading-[1.75] whitespace-pre-wrap break-words md:text-base md:leading-[1.8] ${m.sender === "user" ? "text-on-primary-container" : "text-on-surface"}`}>{m.content}</div>
                         {m.evaluation && (
-                          <div className={`mt-4 pt-4 space-y-2 rounded-xl px-3 py-3 border border-outline-variant/25 ${m.sender === "user" ? "bg-surface-container-lowest/45" : "bg-surface-container-lowest/35"}`}>
-                            <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider text-primary-container">
+                          <div className={`mt-6 space-y-3 rounded-xl border border-outline-variant/25 px-4 py-4 pt-5 ${m.sender === "user" ? "bg-surface-container-lowest/45" : "bg-surface-container-lowest/35"}`}>
+                            <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] font-bold uppercase tracking-wider text-primary-container">
                               <span>Score</span>
-                              <span className="tabular-nums text-base bg-surface px-2 py-0.5 rounded-lg border border-primary-container/30 text-on-surface">{m.evaluation.overall_score}/10</span>
+                              <span className="tabular-nums rounded-lg border border-primary-container/30 bg-surface px-2 py-0.5 text-base text-on-surface">{m.evaluation.overall_score}/10</span>
                             </div>
                             {m.evaluation.gap_analysis?.length > 0 && (
-                              <ul className="text-xs space-y-1.5 text-on-surface-variant list-disc pl-4">
+                              <ul className="list-disc space-y-1.5 pl-4 text-xs leading-relaxed text-on-surface-variant">
                                 {m.evaluation.gap_analysis.map((gap: string, gIdx: number) => (
-                                  <li key={gIdx}>{gap}</li>
+                                  <li key={gIdx} className="break-words">{gap}</li>
                                 ))}
                               </ul>
                             )}
@@ -567,72 +580,78 @@ export default function RealisticInterviewPage() {
                     </motion.div>
                   ))}
                   {loading && (
-                    <div className="flex justify-start">
-                      <div className="inline-flex items-center gap-3 rounded-2xl bg-surface-container-high/60 border border-outline-variant/30 px-4 py-3 text-sm text-on-surface-variant">
-                        <Loader2 className="w-4 h-4 animate-spin text-primary-container" />
+                    <div className="flex w-full justify-start">
+                      <div className="inline-flex items-center gap-3 rounded-2xl border border-outline-variant/30 bg-surface-container-high/60 px-4 py-3 text-sm text-on-surface-variant">
+                        <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary-container" />
                         Evaluating…
                       </div>
                     </div>
                   )}
                 </div>
-                <div className="shrink-0 px-5 py-5 md:px-7 md:py-6 bg-surface-container-lowest/50 border-t border-outline-variant/25 space-y-4">
+                <div className="shrink-0 space-y-4 border-t border-outline-variant/25 bg-surface-container-lowest/50 px-5 py-5 md:px-7 md:py-6">
                   {(currentStage === 5 || currentStage === 6) && (
                     <div className="flex flex-wrap gap-2">
                       {currentStage === 5 && (
-                        <a href="https://excalidraw.com/" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-xs font-medium px-4 py-2 rounded-xl border border-outline-variant/45 bg-surface-container-high/70 hover:border-primary-container/50 transition-colors">
-                          <PenSquare size={14} className="text-primary-container" /> Excalidraw
+                        <a href="https://excalidraw.com/" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-outline-variant/45 bg-surface-container-high/70 px-4 py-2.5 text-xs font-medium transition-colors hover:border-primary-container/50">
+                          <PenSquare size={14} className="shrink-0 text-primary-container" aria-hidden />
+                          Excalidraw
                         </a>
                       )}
                       {currentStage === 6 && (
-                        <a href="https://www.onlinegdb.com/" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-xs font-medium px-4 py-2 rounded-xl border border-outline-variant/45 bg-surface-container-high/70 hover:border-primary-container/50 transition-colors">
-                          <Code2 size={14} className="text-primary-container" /> Code playground
+                        <a href="https://www.onlinegdb.com/" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-outline-variant/45 bg-surface-container-high/70 px-4 py-2.5 text-xs font-medium transition-colors hover:border-primary-container/50">
+                          <Code2 size={14} className="shrink-0 text-primary-container" aria-hidden />
+                          Code playground
                         </a>
                       )}
                     </div>
                   )}
-                  <div className="rounded-2xl bg-surface-container-high/50 border border-outline-variant/40 overflow-hidden">
-                    <div className="flex items-center justify-between px-4 pt-3 pb-1">
-                      <span className="text-xs font-medium text-on-surface-variant">Your answer</span>
-                      <span className={`text-[11px] font-medium rounded-full px-2.5 py-1 ${isRecordingAnswer ? "bg-error/15 text-error" : "bg-primary-container/15 text-primary-container"}`}>
+                  <div className="overflow-hidden rounded-2xl border border-outline-variant/40 bg-surface-container-high/50">
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-outline-variant/20 px-4 py-3 sm:px-5">
+                      <span className="text-xs font-medium text-on-surface">Your answer</span>
+                      <span className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${isRecordingAnswer ? "bg-error/15 text-error" : "bg-primary-container/15 text-primary-container"}`}>
                         {isRecordingAnswer ? "Listening…" : "Speech to text"}
                       </span>
                     </div>
-                    <div className="flex items-end gap-2 px-3 pb-3">
-                      <textarea value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="Type your response… (mic on the right)" className="flex-1 min-w-0 rounded-2xl bg-surface-container-high border border-outline-variant/50 px-4 py-3 text-[15px] leading-relaxed text-on-surface placeholder:text-on-surface-variant/60 focus:outline-none focus:ring-2 focus:ring-primary-container focus:border-transparent resize-none min-h-[96px] max-h-[200px] shadow-inner" rows={3} disabled={loading} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }} />
-                      <motion.button type="button" whileTap={{ scale: 0.94 }} aria-label="Dictate" onClick={toggleCandidateVoice} disabled={loading || currentStage < 1 || currentStage > 6} className={`mb-1 flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border-2 transition-all ${isRecordingAnswer ? "border-error/60 bg-error/15 text-error" : "border-primary-container/50 bg-primary-container/15 text-primary-container hover:bg-primary-container/25"} disabled:opacity-35`}>
-                        {isRecordingAnswer ? <MicOff size={22} /> : <Mic size={22} />}
-                      </motion.button>
+                    <div className="p-4 sm:p-5">
+                      <textarea value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="Type your response… (mic + send below)" className="min-h-[96px] w-full resize-y rounded-2xl border border-outline-variant/50 bg-surface-container-high px-4 py-3 text-[15px] leading-relaxed text-on-surface shadow-inner placeholder:text-on-surface-variant/60 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary-container sm:min-h-[104px]" rows={3} disabled={loading} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }} />
                     </div>
-                    <div className="flex items-center justify-between gap-3 px-4 py-3 bg-surface-container-lowest/40 border-t border-outline-variant/25">
-                      <button type="button" onClick={handleNeedHelp} disabled={loading} className="inline-flex items-center gap-1.5 text-xs text-on-surface-variant hover:text-primary-container transition-colors disabled:opacity-45">
-                        <HelpCircle size={14} className="text-secondary-container" />
+                    <div className="flex flex-col gap-3 border-t border-outline-variant/25 bg-surface-container-lowest/40 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-5 sm:py-4">
+                      <button type="button" onClick={handleNeedHelp} disabled={loading} className="inline-flex items-center gap-2 rounded-lg px-2 py-2 text-xs font-medium text-on-surface-variant transition-colors hover:text-primary-container disabled:opacity-45 sm:justify-start">
+                        <HelpCircle size={14} className="shrink-0 text-secondary-container" aria-hidden />
                         Suggested answer
                       </button>
-                      <button type="button" onClick={handleSend} disabled={loading || !answer.trim()} className="inline-flex items-center gap-2 rounded-xl bg-primary-container text-on-primary-container px-5 py-2.5 text-sm font-medium hover:opacity-90 disabled:opacity-40 transition-all shadow-lg ring-1 ring-primary-container/40">
-                        <Send size={16} /> Send
-                      </button>
+                      <div className="flex w-full min-w-0 overflow-hidden rounded-xl border-2 border-primary-container/45 bg-surface-container-high shadow-md ring-1 ring-primary-container/20 sm:max-w-sm sm:shrink-0">
+                        <motion.button type="button" whileTap={{ scale: 0.98 }} aria-label={isRecordingAnswer ? "Stop dictation" : "Start dictation"} onClick={toggleCandidateVoice} disabled={loading || currentStage < 1 || currentStage > 6} className={`flex min-h-12 flex-1 items-center justify-center gap-2 border-r border-outline-variant/40 px-3 py-3 text-xs font-semibold transition-colors sm:px-4 sm:text-sm ${isRecordingAnswer ? "bg-error/10 text-error" : "text-primary-container hover:bg-primary-container/10"} disabled:opacity-35`}>
+                          {isRecordingAnswer ? <MicOff size={20} className="shrink-0" aria-hidden /> : <Mic size={20} className="shrink-0" aria-hidden />}
+                          <span className="hidden sm:inline">{isRecordingAnswer ? "Stop" : "Dictate"}</span>
+                        </motion.button>
+                        <button type="button" onClick={handleSend} disabled={loading || !answer.trim()} className="flex min-h-12 flex-1 items-center justify-center gap-2 bg-primary-container px-3 py-3 text-xs font-semibold text-on-primary-container transition-all hover:opacity-90 disabled:opacity-40 sm:px-5 sm:text-sm">
+                          <Send size={18} className="shrink-0" aria-hidden />
+                          Send
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Video sidebar — secondary (5 cols) */}
-              <div className="order-2 lg:col-span-5 flex flex-col gap-4 min-w-0">
-                <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 md:px-6 rounded-xl bg-surface-container-high/50 backdrop-blur-md border border-outline-variant/35 shadow-lg">
-                  <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-container/15 border border-primary-container/25 text-xs font-bold text-on-surface">
-                    <span className="h-2 w-2 rounded-full bg-primary-container ring-2 ring-primary-container/50 shadow-lg animate-pulse" /> Live
+              <div className="order-2 flex min-w-0 flex-col gap-4 lg:col-span-5">
+                <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 rounded-xl border border-outline-variant/35 bg-surface-container-high/50 px-5 py-4 shadow-lg backdrop-blur-md md:px-6">
+                  <span className="inline-flex w-fit items-center gap-2 justify-self-start rounded-full border border-primary-container/25 bg-primary-container/15 px-3 py-1.5 text-xs font-bold text-on-surface">
+                    <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-primary-container shadow-lg ring-2 ring-primary-container/50" aria-hidden />
+                    Live
                   </span>
-                  <span className={`tabular-nums text-sm font-bold px-4 py-1 rounded-lg border ${timeLeft <= 30 ? "bg-error/15 text-error border-error/40 animate-pulse" : "bg-surface-container-lowest border-outline-variant/50 text-on-surface"}`}>
+                  <span className={`justify-self-center whitespace-nowrap rounded-lg border px-4 py-2 text-sm font-bold tabular-nums ${timeLeft <= 30 ? "animate-pulse border-error/40 bg-error/15 text-error" : "border-outline-variant/50 bg-surface-container-lowest text-on-surface"}`}>
                     {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, "0")}
                   </span>
-                  <span className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Round {currentStage}<span className="opacity-50">/6</span></span>
+                  <span className="justify-self-end text-right text-xs font-bold uppercase tracking-wider text-on-surface-variant">Round {currentStage}<span className="opacity-50">/6</span></span>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-4">
-                  <div className={`relative aspect-video rounded-3xl overflow-hidden flex items-center justify-center border bg-surface-container-lowest transition-all duration-500 shadow-2xl ${aiSpeaking ? "border-primary-container ring-2 ring-primary-container/30 shadow-lg" : "border-outline-variant/30"}`}>
-                    <div className={`flex h-32 w-32 items-center justify-center rounded-full bg-surface-container-high border border-outline-variant/50 shadow-2xl transition-transform duration-700 ${aiSpeaking ? "scale-110 border-primary-container ring-2 ring-primary-container/40 shadow-lg" : ""}`}>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-1">
+                  <div className={`relative flex aspect-video items-center justify-center overflow-hidden rounded-3xl border bg-surface-container-lowest shadow-2xl transition-all duration-500 ${aiSpeaking ? "border-primary-container shadow-lg ring-2 ring-primary-container/30" : "border-outline-variant/30"}`}>
+                    <div className={`flex h-32 w-32 items-center justify-center rounded-full border border-outline-variant/50 bg-surface-container-high shadow-2xl transition-transform duration-700 ${aiSpeaking ? "scale-110 border-primary-container ring-2 ring-primary-container/40 shadow-lg" : ""}`}>
                       <div className="relative">
                         <UserRound size={48} className={aiSpeaking ? "text-primary-container" : "text-on-surface-variant"} />
-                        <Sparkles size={16} className="absolute -right-1 -top-1 text-primary-container animate-pulse" />
+                        <Sparkles size={16} className="absolute -right-1 -top-1 animate-pulse text-primary-container" />
                       </div>
                     </div>
                     {aiSpeaking && (
@@ -642,11 +661,11 @@ export default function RealisticInterviewPage() {
                         ))}
                       </div>
                     )}
-                    <div className="absolute bottom-5 left-5 bg-surface/60 backdrop-blur-xl border border-outline-variant/30 px-4 py-2 rounded-xl">
-                      <span className="text-xs font-bold text-on-surface tracking-wider">PrepAI</span>
+                    <div className="absolute bottom-5 left-5 rounded-xl border border-outline-variant/30 bg-surface/60 px-4 py-2 backdrop-blur-xl">
+                      <span className="text-xs font-bold tracking-wider text-on-surface">PrepAI</span>
                     </div>
                   </div>
-                  <div className="relative aspect-video rounded-3xl overflow-hidden border border-outline-variant/30 bg-surface-container-lowest shadow-2xl">
+                  <div className="relative aspect-video overflow-hidden rounded-3xl border border-outline-variant/30 bg-surface-container-lowest shadow-2xl">
                     {webcamEnabled ? (
                       <Webcam audio={false} className="h-full w-full object-cover opacity-90" mirrored />
                     ) : (
@@ -655,11 +674,11 @@ export default function RealisticInterviewPage() {
                         <span className="text-sm font-medium tracking-widest uppercase">Stream offline</span>
                       </div>
                     )}
-                    <div className="absolute bottom-5 left-5 bg-surface/60 backdrop-blur-xl border border-outline-variant/30 px-4 py-2 rounded-xl">
-                      <span className="text-xs font-bold text-on-surface tracking-wider">{candidateName} (You)</span>
+                    <div className="absolute bottom-5 left-5 max-w-[calc(100%-5rem)] rounded-xl border border-outline-variant/30 bg-surface/60 px-4 py-2 backdrop-blur-xl">
+                      <span className="break-words text-xs font-bold leading-snug tracking-wider text-on-surface">{candidateName} (You)</span>
                     </div>
-                    <button type="button" onClick={() => setWebcamEnabled(!webcamEnabled)} className="absolute top-5 right-5 bg-surface/60 backdrop-blur-xl border border-outline-variant/30 p-3 rounded-full text-on-surface hover:bg-surface-container-high transition">
-                      {webcamEnabled ? <Camera size={18} /> : <CameraOff size={18} />}
+                    <button type="button" onClick={() => setWebcamEnabled(!webcamEnabled)} aria-label={webcamEnabled ? "Turn camera off" : "Turn camera on"} className="absolute right-5 top-5 rounded-full border border-outline-variant/30 bg-surface/60 p-3 text-on-surface backdrop-blur-xl transition hover:bg-surface-container-high">
+                      {webcamEnabled ? <Camera size={18} aria-hidden /> : <CameraOff size={18} aria-hidden />}
                     </button>
                   </div>
                 </div>
