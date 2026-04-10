@@ -351,6 +351,18 @@ export default function RealisticInterviewPage() {
     }
   };
 
+  const handleRetakeStage = () => {
+    setMessages([]);
+    setAnsweredInStage(0);
+    setReadyForNextStage(false);
+    setTimeLeft(120);
+    // Add a slight delay to ensure UI resets before bot speaks
+    setTimeout(() => {
+        addBotMessage(dynamicStageQuestions[currentStage - 1]);
+    }, 100);
+    toast.success(`Stage ${currentStage} reset. You can try again!`);
+  };
+
   const toggleCandidateVoice = () => {
     if (isRecordingAnswer) {
       speechRecognitionRef.current?.stop?.();
@@ -424,7 +436,14 @@ export default function RealisticInterviewPage() {
       let finalReply = replyText;
 
       if (currentStage === 1) {
-        finalReply = `${replyText}\n\nGreat. Intro evaluation is complete. Please click "Next Stage" to continue.`;
+        const score = data?.evaluation?.overall_score || 0;
+        const retryRequired = data?.evaluation?.retry_required;
+        
+        if (retryRequired || score < 7.5) {
+            finalReply = `${replyText}\n\nIntro evaluation complete, but there's room for improvement. You may retake it for a better score or proceed to the next stage.`;
+        } else {
+            finalReply = `${replyText}\n\nGreat. Intro evaluation is complete. Your introduction was solid. Please click "Next Stage" to continue.`;
+        }
         setReadyForNextStage(true);
       } else if (newCount >= target) {
         finalReply = `${replyText}\n\nSection complete (${newCount}/${target}). Click "Next Stage" when ready.`;
@@ -672,18 +691,29 @@ export default function RealisticInterviewPage() {
                       <p className="truncate text-xs text-white/45">Enter to send · Shift+Enter new line</p>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={nextStage}
-                    disabled={loading}
-                    className={`shrink-0 rounded-full border px-4 py-2 text-center text-[10px] font-bold uppercase tracking-wide transition-all ${
-                      readyForNextStage
-                        ? "border-[#008a3e] bg-[#008a3e] text-white shadow-md shadow-[#008a3e]/25"
-                        : "border-white/15 bg-white/[0.06] text-white/80 hover:bg-white/10"
-                    } disabled:opacity-45`}
-                  >
-                    Next stage
-                  </button>
+                  <div className="flex shrink-0 items-center gap-2">
+                    {readyForNextStage && currentStage === 1 && (
+                      <button
+                        type="button"
+                        onClick={handleRetakeStage}
+                        className="shrink-0 rounded-full border border-white/15 bg-white/[0.06] px-4 py-2 text-center text-[10px] font-bold uppercase tracking-wide text-white/80 transition-all hover:bg-white/10"
+                      >
+                        Retake intro
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={nextStage}
+                      disabled={loading}
+                      className={`shrink-0 rounded-full border px-4 py-2 text-center text-[10px] font-bold uppercase tracking-wide transition-all ${
+                        readyForNextStage
+                          ? "border-[#008a3e] bg-[#008a3e] text-white shadow-md shadow-[#008a3e]/25"
+                          : "border-white/15 bg-white/[0.06] text-white/80 hover:bg-white/10"
+                      } disabled:opacity-45`}
+                    >
+                      Next stage
+                    </button>
+                  </div>
                 </div>
 
                 <div className="shrink-0 px-4 pt-2 pb-1 md:px-5">
