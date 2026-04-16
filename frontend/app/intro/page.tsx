@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { evaluateIntro, getIntroHistory } from "@/lib/api";
 import toast from "react-hot-toast";
 import Link from "next/link";
-import { Brain, Mic, Square, ChevronLeft, CheckCircle, XCircle, Clock, Play, RotateCcw, Send, Volume2, VolumeX } from "lucide-react";
+import { Brain, Mic, Square, ChevronLeft, CheckCircle, XCircle, Clock, Play, RotateCcw, Send, Volume2, VolumeX, ChevronDown, ChevronUp, FileText, BarChart2 } from "lucide-react";
 
 const CRITERIA = ["Fluency", "Grammar", "Confidence", "Structure", "Clarity"];
 
@@ -25,6 +25,11 @@ export default function IntroPage() {
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [selectedVoiceName, setSelectedVoiceName] = useState("");
+
+  const [templateExpanded, setTemplateExpanded] = useState(true);
+  const [recorderExpanded, setRecorderExpanded] = useState(true);
+  const [resultsExpanded, setResultsExpanded] = useState(true);
+  const [historyExpanded, setHistoryExpanded] = useState(true);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -205,10 +210,10 @@ export default function IntroPage() {
 
       <div style={{ maxWidth: 1100, margin: "0 auto", padding: "48px 24px" }}>
         <div style={{ marginBottom: 40 }}>
-          <h1 style={{ fontSize: 38, marginBottom: 8 }}>
+          <h1 style={{ fontSize: 32, marginBottom: 8 }}>
             Intro <span className="glow-text">Practice & AI Scoring</span>
           </h1>
-          <p style={{ color: "var(--text-secondary)", fontSize: 17 }}>
+          <p style={{ color: "var(--text-secondary)", fontSize: 16 }}>
             Record your self-introduction and get detailed AI feedback. Score 70+ to pass.
           </p>
         </div>
@@ -226,18 +231,42 @@ export default function IntroPage() {
           {/* Left: Recording */}
           <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
             {/* Ideal template */}
-            <div className="card" style={{ padding: 28 }}>
-              <h3 style={{ fontSize: 15, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 12 }}>💡 Your Custom Generated Intro Template</h3>
-              <pre style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.8, whiteSpace: "pre-wrap" }}>
-                {idealIntro}
-              </pre>
+            <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+              <div 
+                onClick={() => setTemplateExpanded(!templateExpanded)}
+                style={{ padding: "16px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", background: "rgba(255,255,255,0.02)", borderBottom: templateExpanded ? "1px solid var(--border)" : "none" }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <FileText size={18} color="var(--text-secondary)" />
+                  <h3 style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)", margin: 0 }}>Your Custom Generated Intro Template</h3>
+                </div>
+                {templateExpanded ? <ChevronUp size={18} color="var(--text-muted)" /> : <ChevronDown size={18} color="var(--text-muted)" />}
+              </div>
+              {templateExpanded && (
+                <div style={{ padding: 24 }}>
+                  <pre style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.8, whiteSpace: "pre-wrap", margin: 0 }}>
+                    {idealIntro}
+                  </pre>
+                </div>
+              )}
             </div>
 
             {/* Recorder */}
-            <div className="card" style={{ padding: 32, textAlign: "center" }}>
-              <h3 style={{ fontSize: 18, marginBottom: 24 }}>Record Your Introduction</h3>
-
-              {/* Big record button */}
+            <div className="card" style={{ padding: 0, textAlign: "center", overflow: "hidden" }}>
+              <div 
+                onClick={() => setRecorderExpanded(!recorderExpanded)}
+                style={{ padding: "16px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", background: "rgba(255,255,255,0.02)", borderBottom: recorderExpanded ? "1px solid var(--border)" : "none" }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <Mic size={18} color="var(--text-secondary)" />
+                  <h3 style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)", margin: 0 }}>Record Your Introduction</h3>
+                </div>
+                {recorderExpanded ? <ChevronUp size={18} color="var(--text-muted)" /> : <ChevronDown size={18} color="var(--text-muted)" />}
+              </div>
+              
+              {recorderExpanded && (
+                <div style={{ padding: 32 }}>
+                  {/* Big record button */}
               <div style={{ marginBottom: 28 }}>
                 {!recording ? (
                   <button
@@ -330,6 +359,8 @@ export default function IntroPage() {
                       Evaluate Text
                     </button>
                   </div>
+                )}
+              </div>
               )}
             </div>
           </div>
@@ -338,7 +369,20 @@ export default function IntroPage() {
           <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
             {/* Current result */}
             {result ? (
-              <div className="card animate-fadeIn" style={{ padding: 32 }}>
+              <div className="card animate-fadeIn" style={{ padding: 0, overflow: "hidden" }}>
+                <div 
+                  onClick={() => setResultsExpanded(!resultsExpanded)}
+                  style={{ padding: "16px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", background: "rgba(255,255,255,0.02)", borderBottom: resultsExpanded ? "1px solid var(--border)" : "none" }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <BarChart2 size={18} color="var(--text-secondary)" />
+                    <h3 style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)", margin: 0 }}>AI Evaluation Results</h3>
+                  </div>
+                  {resultsExpanded ? <ChevronUp size={18} color="var(--text-muted)" /> : <ChevronDown size={18} color="var(--text-muted)" />}
+                </div>
+
+                {resultsExpanded && (
+                  <div style={{ padding: 32 }}>
                 {/* Voice toggle */}
                 <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16 }}>
                     <button onClick={() => {
@@ -412,9 +456,8 @@ export default function IntroPage() {
                     <p style={{ color: "var(--text-secondary)", fontSize: 14, lineHeight: 1.7 }}>{result.improvements}</p>
                   </div>
                 )}
-
                 {/* Pipeline Progression Button */}
-                {result.passed && (
+                {result.passed ? (
                   <div style={{ marginTop: 24, paddingTop: 24, borderTop: "1px solid var(--border)", textAlign: "center" }}>
                     <p style={{ color: "var(--text-secondary)", marginBottom: 16 }}>You've unlocked the final stage!</p>
                     <Link href="/interview">
@@ -422,6 +465,15 @@ export default function IntroPage() {
                         Proceed to Mock Interviews
                       </button>
                     </Link>
+                  </div>
+                ) : (
+                  <div style={{ marginTop: 24, paddingTop: 24, borderTop: "1px solid var(--border)", textAlign: "center" }}>
+                    <p style={{ color: "var(--text-secondary)", marginBottom: 16 }}>Your score didn't meet the passing criteria (70+).</p>
+                    <button className="btn-secondary" onClick={reset} style={{ width: "100%", padding: "14px 0", fontSize: 16 }}>
+                      Retake the Intro
+                    </button>
+                  </div>
+                )}
                   </div>
                 )}
               </div>
@@ -435,12 +487,20 @@ export default function IntroPage() {
 
             {/* History */}
             {history.length > 0 && (
-              <div className="card" style={{ padding: 24 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 16 }}>
-                  <Clock size={16} color="var(--text-secondary)" />
-                  <h3 style={{ fontSize: 14, color: "var(--text-secondary)", fontWeight: 600 }}>Past Attempts ({history.length})</h3>
+              <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+                <div 
+                  onClick={() => setHistoryExpanded(!historyExpanded)}
+                  style={{ padding: "16px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", background: "rgba(255,255,255,0.02)", borderBottom: historyExpanded ? "1px solid var(--border)" : "none" }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <Clock size={16} color="var(--text-secondary)" />
+                    <h3 style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)", margin: 0 }}>Past Attempts ({history.length})</h3>
+                  </div>
+                  {historyExpanded ? <ChevronUp size={18} color="var(--text-muted)" /> : <ChevronDown size={18} color="var(--text-muted)" />}
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                
+                {historyExpanded && (
+                  <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 8 }}>
                   {history.slice(0, 5).map((h, i) => (
                     <div key={h.id} style={{
                       display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -462,7 +522,8 @@ export default function IntroPage() {
                       </div>
                     </div>
                   ))}
-                </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
