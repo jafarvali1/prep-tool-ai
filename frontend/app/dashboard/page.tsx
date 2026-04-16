@@ -1,108 +1,76 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getResumeSummary, getResumeAnalytics } from "@/lib/api";
+import { getResumeSummary, getCaseStudyHistory, getIntroHistory } from "@/lib/api";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import {
-  Brain,
   FileText,
-  Mic,
-  BookOpen,
-  ChevronRight,
-  LogOut,
   User,
-  BarChart,
-  Zap,
   CheckCircle,
-  Video,
+  Lock,
+  ArrowRight,
+  BookOpen,
+  Mic,
+  Video
 } from "lucide-react";
 
-export default function DashboardPage() {
+export default function DashboardPipeline() {
   const router = useRouter();
   const [sessionId, setSessionId] = useState("");
-  const [provider, setProvider] = useState("openai");
-  const [wordCount, setWordCount] = useState(0);
-  const [resumePreview, setResumePreview] = useState("");
   const [candidateName, setCandidateName] = useState("");
   const [loading, setLoading] = useState(true);
-  const [analytics, setAnalytics] = useState<any>(null);
-  const [analyticsLoading, setAnalyticsLoading] = useState(true);
+
+  // States for Pipeline Progression
+  const [hasSetup, setHasSetup] = useState(false);
+  const [hasCaseStudy, setHasCaseStudy] = useState(false);
+  const [hasPassedIntro, setHasPassedIntro] = useState(false);
 
   useEffect(() => {
     const sid = localStorage.getItem("session_id");
-    const prov = localStorage.getItem("api_provider") || "openai";
     if (!sid) {
       router.push("/setup");
       return;
     }
     setSessionId(sid);
-    setProvider(prov);
 
-    getResumeSummary(sid)
-      .then((data) => {
-        setWordCount(data.word_count);
-        setResumePreview(data.resume_text.slice(0, 400));
-        if (data.candidate_name) {
-          localStorage.setItem("candidate_name", data.candidate_name);
-          setCandidateName(data.candidate_name);
+    const checkPipelineStatus = async () => {
+      try {
+        // Step 1 Check
+        const resumeSummary = await getResumeSummary(sid);
+        if (resumeSummary.resume_text) setHasSetup(true);
+        if (resumeSummary.candidate_name) {
+          localStorage.setItem("candidate_name", resumeSummary.candidate_name);
+          setCandidateName(resumeSummary.candidate_name);
         } else {
           setCandidateName(localStorage.getItem("candidate_name") || "");
         }
-        setLoading(false);
-      })
-      .catch(() => {
-        setCandidateName(localStorage.getItem("candidate_name") || "");
-        setLoading(false);
-      });
 
-    // Load rich analytics
-    getResumeAnalytics(sid)
-      .then((data) => {
-        setAnalytics(data);
-        setAnalyticsLoading(false);
-      })
-      .catch((err) => {
-        console.error("Analytics fetch failed", err);
-        setAnalyticsLoading(false);
-      });
+        // Step 2 & 3 Check (Case study generated)
+        try {
+          const csHist = await getCaseStudyHistory(sid);
+          if (csHist.case_studies && csHist.case_studies.length > 0) {
+            setHasCaseStudy(true);
+          }
+        } catch (e) {}
+
+        // Step 4 Check (Intro passed)
+        try {
+          const introHist = await getIntroHistory(sid);
+          if (introHist.attempts && introHist.attempts.length > 0) {
+            const passedAny = introHist.attempts.some((a: any) => a.score >= 70); // Assuming 70+ is passing here
+            setHasPassedIntro(passedAny);
+          }
+        } catch (e) {}
+      } catch (err) {
+        console.error("Failed to load pipeline stats:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkPipelineStatus();
   }, [router]);
-
-  const modules = [
-    {
-      href: "/interview",
-      icon: <Video size={28} />,
-      title: "6-Stage Realistic Interview",
-      desc: "Face an AI Bot in a realistic environment. 6 rounds including intro, behavioral, technical, design, and coding.",
-      badge: "Flagship",
-      badgeClass: "badge-success",
-      glow: true,
-    },
-    {
-      href: "/case-study",
-      icon: <BookOpen size={28} />,
-      title: "Case Study Generator",
-      desc: "Generate a detailed case study from your resume or pick a domain topic.",
-      badge: "AI Agent",
-      badgeClass: "badge-accent",
-    },
-    {
-      href: "/report",
-      icon: <FileText size={28} />,
-      title: "Final Interview Report",
-      desc: "Get a comprehensive AI report covering all your prep activity and interview readiness score.",
-      badge: "Report",
-      badgeClass: "badge-accent",
-    },
-    {
-      href: "/setup",
-      icon: <User size={28} />,
-      title: "Update Setup",
-      desc: "Upload a new version of your resume or change your API key configuration.",
-      badge: "Setup",
-      badgeClass: "badge-accent",
-    },
-  ];
 
   const handleLogout = () => {
     localStorage.removeItem("session_id");
@@ -110,419 +78,143 @@ export default function DashboardPage() {
     router.push("/");
   };
 
+  const steps = [
+    {
+      num: 1,
+      id: "setup",
+      icon: <User size={24} />,
+      title: "Complete Initial Setup",
+      desc: "Upload resume and AI API credentials.",
+      href: "/setup",
+      status: hasSetup ? "completed" : "pending",
+      btnText: hasSetup ? "Update Setup" : "Start Setup",
+    },
+    {
+      num: 2,
+      id: "project",
+      icon: <BookOpen size={24} />,
+      title: "Project Explanation & Case Study",
+      desc: "Interact with AI to explain your project, give it a usecase, and generate a case study.",
+      href: "/project-explanation",
+      status: hasCaseStudy ? "completed" : (hasSetup ? "pending" : "locked"),
+      btnText: hasCaseStudy ? "Review Project/Case Study" : "Explain Project",
+    },
+    {
+      num: 3,
+      id: "intro",
+      icon: <Mic size={24} />,
+      title: "Self-Introduction Audio Test",
+      desc: "Record your intro. AI will score your fluency and required technical keywords.",
+      href: "/intro",
+      status: hasPassedIntro ? "completed" : (hasCaseStudy ? "pending" : "locked"),
+      btnText: hasPassedIntro ? "Retake Intro" : "Record Intro",
+    },
+    {
+      num: 4,
+      id: "interviews",
+      icon: <Video size={24} />,
+      title: "Practice Mock Interviews",
+      desc: "Face challenging AI agents using your generated case study context.",
+      href: "/interview",
+      status: hasPassedIntro ? "pending" : "locked",
+      btnText: "Start Interviews",
+    }
+  ];
+
+  if (loading) {
+     return (
+       <div style={{ minHeight: "100vh", background: "var(--bg-primary)", display: "flex", justifyContent: "center", alignItems: "center" }}>
+          <div className="animate-spin" style={{ width: 40, height: 40, border: "4px solid rgba(139,92,246,0.2)", borderTopColor: "var(--accent-light)", borderRadius: "50%" }}></div>
+       </div>
+     );
+  }
+
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg-primary)" }}>
       {/* Navbar */}
-      <Navbar
-        candidateName={candidateName}
-        onLogout={handleLogout}
-      />
+      <Navbar candidateName={candidateName} onLogout={handleLogout} />
 
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "48px 24px" }}>
-        {/* Header */}
-        <div
-          style={{
-            marginBottom: 48,
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: 24,
-          }}
-        >
-          <div>
-            <h1 style={{ fontSize: 40, marginBottom: 8 }}>
-              Your AI <span className="glow-text">Prep Dashboard</span>
-            </h1>
-            <p style={{ color: "var(--text-secondary)", fontSize: 17 }}>
-              Next-Gen Enterprise Interview Preparation Setup
-            </p>
+      <div style={{ maxWidth: 860, margin: "0 auto", padding: "60px 24px" }}>
+        
+        <div style={{ textAlign: "center", marginBottom: 56 }}>
+          <div className="badge badge-accent" style={{ display: "inline-flex", marginBottom: 16 }}>
+             Candidate Progress Journey
           </div>
+          <h1 style={{ fontSize: 36, marginBottom: 16 }}>
+            Your <span className="glow-text">Pipeline Tracker</span>
+          </h1>
+          <p style={{ color: "var(--text-secondary)", fontSize: 16, maxWidth: 600, margin: "0 auto" }}>
+            Follow the sequential path. You must complete each step successfully to unlock the next and prove your readiness.
+          </p>
         </div>
 
-        {/* Stats row */}
-        {!loading && wordCount > 0 && (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-              gap: 16,
-              marginBottom: 40,
-            }}
-          >
-            {[
-              {
-                label: "Words in Resume",
-                value: wordCount,
-                icon: <FileText size={18} />,
-                color: "var(--accent-light)",
-              },
-              {
-                label: "AI Backend",
-                value: provider.charAt(0).toUpperCase() + provider.slice(1),
-                icon: <Brain size={18} />,
-                color: "#10b981",
-              },
-              {
-                label: "Platform Status",
-                value: "Enterprise Ready",
-                icon: <CheckCircle size={18} />,
-                color: "#f59e0b",
-              },
-            ].map((s, i) => (
-              <div key={i} className="card" style={{ padding: 24 }}>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    color: s.color,
-                    marginBottom: 8,
-                  }}
-                >
-                  {s.icon}
-                  <span
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 600,
-                      color: "var(--text-secondary)",
-                    }}
-                  >
-                    {s.label}
-                  </span>
-                </div>
-                <p
-                  style={{
-                    fontSize: 22,
-                    fontWeight: 800,
-                    fontFamily: "'Outfit', sans-serif",
-                    color: "var(--text-primary)",
-                  }}
-                >
-                  {s.value}
-                </p>
-              </div>
-            ))}
-          </div>
-        )}
+        <div style={{ display: "flex", flexDirection: "column", gap: 24, position: "relative" }}>
+           {/* Connecting vertical line */}
+           <div style={{
+              position: "absolute", left: 34, top: 40, bottom: 40, width: 2,
+              background: "rgba(255,255,255,0.05)", zIndex: 0
+           }}></div>
 
-        {/* Analytics Section */}
-        {analyticsLoading ? (
-          <div
-            className="card"
-            style={{
-              padding: 40,
-              textAlign: "center",
-              marginBottom: 36,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-            }}
-          >
-            <div
-              className="animate-spin"
-              style={{
-                width: 24,
-                height: 24,
-                border: "3px solid rgba(139,92,246,0.2)",
-                borderTopColor: "var(--accent-light)",
-                borderRadius: "50%",
-                marginBottom: 16,
-              }}
-            ></div>
-            <p style={{ color: "var(--text-secondary)", fontSize: 16 }}>
-              Analyzing your resume keywords, projects, and insights...
-            </p>
-          </div>
-        ) : analytics ? (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "2fr 1fr",
-              gap: 24,
-              marginBottom: 40,
-            }}
-          >
-            <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-              {/* Projects */}
-              <div className="card" style={{ padding: 28, flex: 1 }}>
-                <h3
-                  style={{
-                    fontSize: 18,
-                    fontWeight: 600,
-                    marginBottom: 16,
-                    display: "flex",
-                    gap: 8,
-                    alignItems: "center",
-                  }}
-                >
-                  <BarChart size={18} color="var(--accent-light)" /> Extracted
-                  Timeline
-                </h3>
-                <div
-                  style={{ display: "flex", flexDirection: "column", gap: 16 }}
-                >
-                  {analytics.projects && analytics.projects.length > 0 && (
-                    <div
-                      style={{
-                        background: "rgba(124,58,237,0.12)",
-                        border: "1px solid rgba(139,92,246,0.35)",
-                        padding: 14,
-                        borderRadius: 12,
-                        fontSize: 13,
-                        color: "var(--text-secondary)",
-                      }}
-                    >
-                      Primary project focus is derived from your first major resume project and used for interview guidance.
+           {steps.map((step, i) => {
+              const isLocked = step.status === "locked";
+              const isCompleted = step.status === "completed";
+              const isPending = step.status === "pending";
+
+              return (
+                 <div key={step.id} style={{
+                    display: "flex", gap: 20, position: "relative", zIndex: 1, opacity: isLocked ? 0.5 : 1, transition: "opacity 0.3s"
+                 }}>
+                    
+                    {/* Status Circle */}
+                    <div style={{
+                       width: 70, height: 70, borderRadius: "50%", flexShrink: 0,
+                       background: isCompleted ? "rgba(16,185,129,0.15)" : isPending ? "var(--bg-card)" : "rgba(255,255,255,0.03)",
+                       border: `2px solid ${isCompleted ? "var(--success)" : isPending ? "var(--accent-light)" : "var(--border)"}`,
+                       display: "flex", alignItems: "center", justifyContent: "center",
+                       color: isCompleted ? "var(--success)" : isPending ? "var(--accent-light)" : "var(--text-muted)",
+                       boxShadow: isPending ? "0 0 20px rgba(139,92,246,0.2)" : "none",
+                    }}>
+                       {isCompleted ? <CheckCircle size={32} /> : isLocked ? <Lock size={28} /> : step.icon}
                     </div>
-                  )}
-                  {analytics.projects && analytics.projects.length > 0 ? (
-                    analytics.projects.map((proj: any, idx: number) => (
-                      <div
-                        key={idx}
-                        style={{
-                          background: "rgba(255,255,255,0.03)",
-                          padding: 16,
-                          borderRadius: 12,
-                          borderLeft: "3px solid var(--accent-light)",
-                        }}
-                      >
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            marginBottom: 6,
-                          }}
-                        >
-                          <h4 style={{ fontSize: 15, fontWeight: 600 }}>
-                            {proj.name}
-                          </h4>
-                          <span
-                            style={{
-                              fontSize: 12,
-                              color: "var(--text-muted)",
-                              background: "rgba(255,255,255,0.1)",
-                              padding: "2px 8px",
-                              borderRadius: 10,
-                            }}
-                          >
-                            {proj.date}
-                          </span>
-                        </div>
-                        <p
-                          style={{
-                            fontSize: 14,
-                            color: "var(--text-secondary)",
-                            lineHeight: 1.5,
-                          }}
-                        >
-                          {proj.desc}
-                        </p>
-                      </div>
-                    ))
-                  ) : (
-                    <p style={{ color: "var(--text-muted)", fontSize: 14 }}>
-                      No clear timeline/projects identified.
-                    </p>
-                  )}
-                </div>
-              </div>
 
-              {/* Sample Intro */}
-              <div className="card" style={{ padding: 28 }}>
-                <h3
-                  style={{
-                    fontSize: 16,
-                    fontWeight: 600,
-                    color: "var(--text-secondary)",
-                    marginBottom: 12,
-                  }}
-                >
-                  💡 Suggested AI Intro
-                </h3>
-                <p
-                  style={{
-                    color: "var(--text-primary)",
-                    fontSize: 15,
-                    lineHeight: 1.7,
-                    background: "rgba(139,92,246,0.1)",
-                    padding: 16,
-                    borderRadius: 12,
-                    border: "1px solid rgba(139,92,246,0.2)",
-                  }}
-                >
-                  "{analytics.sample_intro}"
-                </p>
-              </div>
-            </div>
+                    {/* Step Content Card */}
+                    <div className={`card ${isPending ? 'glow-purple' : ''}`} style={{
+                       flex: 1, padding: "28px 32px", display: "flex", flexDirection: "column", gap: 16,
+                       border: isPending ? "1px solid rgba(139,92,246,0.3)" : "1px solid var(--border)",
+                    }}>
+                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                          <div>
+                             <span style={{ fontSize: 13, textTransform: "uppercase", fontWeight: 700, letterSpacing: "1px", color: isCompleted ? "var(--success)" : "var(--accent-light)", marginBottom: 8, display: "block" }}>
+                                {isCompleted ? "Passed" : isLocked ? "Locked" : "Next Up"}
+                             </span>
+                             <h3 style={{ fontSize: 22, color: "var(--text-primary)" }}>
+                                Step {step.num}: {step.title}
+                             </h3>
+                          </div>
+                       </div>
+                       
+                       <p style={{ color: "var(--text-secondary)", fontSize: 15, lineHeight: 1.6 }}>
+                         {step.desc}
+                       </p>
+                       
+                       <div style={{ marginTop: "auto", paddingTop: 8 }}>
+                          {isLocked ? (
+                             <button className="btn-secondary" disabled style={{ opacity: 0.5, cursor: "not-allowed" }}>
+                                Complete previous steps to unlock
+                             </button>
+                          ) : (
+                             <Link href={step.href}>
+                               <button className={isPending ? "btn-primary" : "btn-secondary"} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 24px" }}>
+                                  {step.btnText} {isPending && <ArrowRight size={16} />}
+                               </button>
+                             </Link>
+                          )}
+                       </div>
+                    </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-              {/* Keywords map */}
-              <div className="card" style={{ padding: 28 }}>
-                <h3
-                  style={{
-                    fontSize: 16,
-                    fontWeight: 600,
-                    marginBottom: 16,
-                    display: "flex",
-                    gap: 8,
-                    alignItems: "center",
-                  }}
-                >
-                  <Zap size={16} color="var(--success)" /> Detected Keywords
-                </h3>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                  {analytics.keywords && analytics.keywords.length > 0 ? (
-                    analytics.keywords.map((kw: string, i: number) => (
-                      <span
-                        key={i}
-                        style={{
-                          padding: "6px 12px",
-                          background: "rgba(16, 185, 129, 0.1)",
-                          color: "#10b981",
-                          borderRadius: 16,
-                          fontSize: 13,
-                          fontWeight: 500,
-                          border: "1px solid rgba(16, 185, 129, 0.2)",
-                        }}
-                      >
-                        {kw}
-                      </span>
-                    ))
-                  ) : (
-                    <span style={{ color: "var(--text-muted)", fontSize: 13 }}>
-                      No keywords extracted yet. Re-upload resume for richer analysis.
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Improvements */}
-              <div className="card" style={{ padding: 28, flex: 1 }}>
-                <h3
-                  style={{
-                    fontSize: 16,
-                    fontWeight: 600,
-                    marginBottom: 16,
-                    color: "var(--warning)",
-                  }}
-                >
-                  Resume Improvement Areas
-                </h3>
-                <ul
-                  style={{
-                    paddingLeft: 16,
-                    color: "var(--text-secondary)",
-                    fontSize: 14,
-                    lineHeight: 1.7,
-                    margin: 0,
-                  }}
-                >
-                  {analytics.improvements &&
-                    analytics.improvements.map((imp: string, i: number) => (
-                      <li key={i} style={{ marginBottom: 8 }}>
-                        {imp}
-                      </li>
-                    ))}
-                </ul>
-              </div>
-            </div>
-          </div>
-        ) : null}
-
-        {/* Module cards (Secondary Tools) */}
-        <h2 style={{ fontSize: 24, marginBottom: 24 }}>
-          Additional AI Practice Tools
-        </h2>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-            gap: 24,
-          }}
-        >
-          {modules.map((m, i) => (
-            <Link key={i} href={m.href} style={{ textDecoration: "none" }}>
-              <div
-                className={`card ${m.glow ? "glow-purple" : ""}`}
-                style={{
-                  padding: 32,
-                  height: "100%",
-                  cursor: "pointer",
-                  transition: "transform 0.2s",
-                }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.transform = "translateY(-4px)")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.transform = "translateY(0)")
-                }
-              >
-                <div
-                  style={{
-                    width: 56,
-                    height: 56,
-                    borderRadius: 14,
-                    background: m.glow
-                      ? "linear-gradient(135deg, rgba(139,92,246,0.3), rgba(139,92,246,0.1))"
-                      : "rgba(139,92,246,0.12)",
-                    border: m.glow
-                      ? "1px solid rgba(139,92,246,0.6)"
-                      : "1px solid rgba(139,92,246,0.25)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "var(--accent-light)",
-                    marginBottom: 20,
-                    boxShadow: m.glow
-                      ? "0 0 15px rgba(139,92,246,0.4)"
-                      : "none",
-                  }}
-                >
-                  {m.icon}
-                </div>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "flex-start",
-                    justifyContent: "space-between",
-                    marginBottom: 12,
-                  }}
-                >
-                  <h3 style={{ fontSize: 19 }}>{m.title}</h3>
-                  <div
-                    className={`badge ${m.badgeClass}`}
-                    style={{ flexShrink: 0, marginLeft: 8 }}
-                  >
-                    {m.badge}
-                  </div>
-                </div>
-                <p
-                  style={{
-                    color: "var(--text-secondary)",
-                    lineHeight: 1.7,
-                    fontSize: 15,
-                    marginBottom: 20,
-                  }}
-                >
-                  {m.desc}
-                </p>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 4,
-                    color: "var(--accent-light)",
-                    fontSize: 13,
-                    fontWeight: 600,
-                  }}
-                >
-                  Open Module <ChevronRight size={14} />
-                </div>
-              </div>
-            </Link>
-          ))}
+                 </div>
+              );
+           })}
         </div>
       </div>
     </div>

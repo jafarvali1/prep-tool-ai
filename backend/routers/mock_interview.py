@@ -190,7 +190,12 @@ async def evaluate_answer_and_followup(request: EvaluateAnswerRequest, db: Sessi
     from services.template_loader import get_intro_template
     import json
     
+    from models import CaseStudy
+    
     intro_template = get_intro_template() if request.stage_name == "AI Intro Test" else ""
+    
+    case_study_record = db.query(CaseStudy).filter(CaseStudy.session_id == request.session_id).order_by(CaseStudy.created_at.desc()).first()
+    case_study_context = case_study_record.content if case_study_record else "No Case Study provided."
     
     stage_rules = ""
     if request.stage_name == "AI Intro Test":
@@ -203,7 +208,7 @@ async def evaluate_answer_and_followup(request: EvaluateAnswerRequest, db: Sessi
     else:
         stage_rules = """
     STAGE RULES:
-    Set "retry_required" to false. Ensure your "follow_up_question" is unique, directly tailored to the candidate's resume, and dives deeper into their past experiences/projects. Do NOT repeat prior questions.
+    Set "retry_required" to false. Ensure your "follow_up_question" is unique, directly tailored to the candidate's resume/case study, and dives deeper into their past experiences/projects. Do NOT repeat prior questions.
         """
     
     prompt = f"""
@@ -213,6 +218,9 @@ async def evaluate_answer_and_followup(request: EvaluateAnswerRequest, db: Sessi
     Stage: {request.stage_name}
     Candidate Resume Context:
     {candidate.resume_text[:2000] if candidate.resume_text else "No resume provided."}
+    
+    Candidate Interview Case Study Context (Prioritize this over Resume):
+    {case_study_context}
     
     {f"Expected Intro Structure/Template:\\n{intro_template}" if intro_template else ""}
     
@@ -325,20 +333,28 @@ async def get_stage_questions(session_id: str, db: Session = Depends(get_db)):
     from services.template_loader import get_intro_template
     import json
     
+    from models import CaseStudy
+    
     intro_template = get_intro_template()
     
+    case_study_record = db.query(CaseStudy).filter(CaseStudy.session_id == session_id).order_by(CaseStudy.created_at.desc()).first()
+    case_study_context = case_study_record.content if case_study_record else "No Case Study provided."
+
     prompt = f"""
     You are an expert technical interviewer configuring a 6-stage interview panel.
     
     Candidate Resume Background: 
     {candidate.resume_text[:2000]}
     
-    Candidate Major Project Highlight:
+    Candidate Interview Case Study Context (Prioritize this over Resume):
+    {case_study_context}
+
+    Candidate Major Project Highlight (Legacy Extraction):
     {project_details}
 
     Generation Seed (for question variety): {datetime.utcnow().isoformat()}
     
-    Based on the candidate's background and project, craft exactly 6 tailored interview questions as a pure JSON array containing 6 strings.
+    Based on the candidate's background and project case study, craft exactly 6 tailored interview questions as a pure JSON array containing 6 strings.
     IMPORTANT: DO NOT prefix the questions with the stage name (e.g., do not output 'AI Intro Test:'). Just output the question itself as if you are directly speaking to the candidate.
     
     Avoid generic wording. The 6 questions must all be different from each other.

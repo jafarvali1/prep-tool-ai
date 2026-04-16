@@ -8,6 +8,26 @@ from services.intro_evaluator import evaluate_intro_from_audio, evaluate_intro_f
 
 router = APIRouter(prefix="/api/intro", tags=["intro"])
 
+from services.project_evaluator import generate_dynamic_intro
+from models import CaseStudy
+
+@router.get("/dynamic-template")
+async def get_dynamic_template(session_id: str, db: Session = Depends(get_db)):
+    candidate = db.query(Candidate).filter(Candidate.session_id == session_id).first()
+    if not candidate:
+        raise HTTPException(status_code=404, detail="Candidate not found")
+        
+    case_studies = db.query(CaseStudy).filter(CaseStudy.session_id == session_id).order_by(CaseStudy.created_at.desc()).first()
+    if not case_studies or not case_studies.content:
+        # Fallback to generic template if no case study exists yet
+        return {"template": "Hi, my name is [Name]. I have [X] years of experience in [domain]. I specialize in [key skills]. In my last role, I built [key achievement]. I am looking for opportunities in [role]."}
+        
+    try:
+        intro_text = await generate_dynamic_intro(case_studies.content, candidate.resume_text or "No resume provided", candidate.api_key, candidate.api_provider)
+        return {"template": intro_text.strip()}
+    except Exception as e:
+        return {"template": "Hi, my name is [Name]. I have [X] years of experience in [domain]. I specialize in [key skills]. In my last role, I built [key achievement]. I am looking for opportunities in [role]."}
+
 
 class TextIntroRequest(BaseModel):
     session_id: str

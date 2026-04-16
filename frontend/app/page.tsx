@@ -42,10 +42,11 @@ export default function HomePage() {
   ];
 
   const steps = [
-    { num: "01", title: "Connect Your API Key", desc: "Enter your OpenAI or Gemini key. We validate it instantly." },
-    { num: "02", title: "Upload Your Resume", desc: "Upload a PDF or DOCX. Our parser extracts your projects automatically." },
-    { num: "03", title: "Generate Case Studies", desc: "One click and AI builds a full interview case study from your work." },
-    { num: "04", title: "Practice Your Intro", desc: "Record → Transcribe → Score. Repeat until you pass." },
+    { num: "01", title: "Setup", desc: "Connect API tools and upload your core Resume." },
+    { num: "02", title: "Project Explanation", desc: "Answer questions about your project and get AI feedback on your completeness." },
+    { num: "03", title: "Use Case Deep Dive", desc: "List example queries and system logic to generate a full case study." },
+    { num: "04", title: "Intro Voice Test", desc: "Record your introduction and pass the AI speech-to-text benchmark." },
+    { num: "05", title: "Mock Interviews", desc: "Face dynamic AI questions based strictly on your project and case study." },
   ];
 
   return (

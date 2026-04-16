@@ -13,7 +13,7 @@ router = APIRouter(prefix="/api/resume", tags=["resume"])
 UPLOAD_DIR = os.getenv("UPLOAD_DIR", "uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-ALLOWED_EXTENSIONS = {".pdf", ".docx", ".doc"}
+ALLOWED_EXTENSIONS = {".pdf", ".docx", ".doc", ".json"}
 
 
 @router.post("/upload", response_model=ResumeSummaryResponse)

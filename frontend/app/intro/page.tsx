@@ -4,12 +4,7 @@ import { useRouter } from "next/navigation";
 import { evaluateIntro, getIntroHistory } from "@/lib/api";
 import toast from "react-hot-toast";
 import Link from "next/link";
-import { Brain, Mic, Square, ChevronLeft, CheckCircle, XCircle, Clock, Play, RotateCcw } from "lucide-react";
-
-const IDEAL_INTRO = `Hi, my name is [Name]. I have [X] years of experience in [domain].
-I specialize in [key skills like Python, machine learning, cloud].
-In my last role at [Company], I built [key achievement].
-I am passionate about [area] and I am looking for opportunities in [role].`;
+import { Brain, Mic, Square, ChevronLeft, CheckCircle, XCircle, Clock, Play, RotateCcw, Send, Volume2, VolumeX } from "lucide-react";
 
 const CRITERIA = ["Fluency", "Grammar", "Confidence", "Structure", "Clarity"];
 
@@ -25,6 +20,11 @@ export default function IntroPage() {
   const [result, setResult] = useState<any>(null);
   const [history, setHistory] = useState<any[]>([]);
   const [candidateName, setCandidateName] = useState("");
+  const [idealIntro, setIdealIntro] = useState<string>("Loading your personalized intro...");
+  const [introText, setIntroText] = useState("");
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [selectedVoiceName, setSelectedVoiceName] = useState("");
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -38,7 +38,31 @@ export default function IntroPage() {
     setProvider(prov);
     setCandidateName(localStorage.getItem("candidate_name") || "");
     getIntroHistory(sid).then((d) => setHistory(d.attempts || [])).catch(() => {});
-  }, [router]);
+    
+    // Fetch Dynamic template here
+    import("@/lib/api").then(api => {
+      api.getDynamicIntroTemplate(sid).then(d => {
+        setIdealIntro(d.template);
+      }).catch(err => {
+        setIdealIntro("Failed to fetch generated intro template.");
+      });
+    });
+
+    if (typeof window !== "undefined" && window.speechSynthesis) {
+      const loadVoices = () => {
+        const voices = window.speechSynthesis.getVoices() || [];
+        const english = voices.filter((v) => /en|english/i.test(v.lang) || /english/i.test(v.name));
+        const finalVoices = english.length ? english : voices;
+        setAvailableVoices(finalVoices);
+        if (!selectedVoiceName && finalVoices.length > 0) {
+          const preferred = finalVoices.find((v) => /female|samantha|zira|aria|google/i.test(v.name)) || finalVoices[0];
+          setSelectedVoiceName(preferred.name);
+        }
+      };
+      loadVoices();
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
+  }, [router, selectedVoiceName]);
 
   const startRecording = async () => {
     if (provider !== "openai") {
@@ -96,6 +120,7 @@ export default function IntroPage() {
       const h = await getIntroHistory(sessionId);
       setHistory(h.attempts || []);
       toast.success(normalized.passed ? "🎉 You Passed!" : "Keep practicing — you'll get there!");
+      speakText(`Intro evaluation complete. Your score is ${normalized.score}. ${normalized.feedback}`);
     } catch (err: any) {
       toast.error(err?.response?.data?.detail || "Evaluation failed. Please try again.");
     } finally {
@@ -106,8 +131,46 @@ export default function IntroPage() {
   const reset = () => {
     setAudioBlob(null);
     setAudioUrl("");
+    setIntroText("");
     setResult(null);
     setRecordingTime(0);
+    if (typeof window !== "undefined" && window.speechSynthesis) window.speechSynthesis.cancel();
+  };
+
+  const handleEvaluateText = async () => {
+    if (!introText.trim()) return;
+    setLoading(true);
+    try {
+      const { evaluateIntroText } = await import("@/lib/api");
+      const data = await evaluateIntroText(sessionId, introText);
+      const normalized = {
+        ...data,
+        score: Math.round((data?.overall_score || 0) * 10),
+        passed: data?.status === "PASS",
+        scores_breakdown: data?.scores || {},
+        feedback: (data?.suggestions || []).join(" "),
+        strengths: data?.status === "PASS" ? "Clear overall interview-ready introduction structure." : "",
+        improvements: (data?.suggestions || []).join(" "),
+      };
+      setResult(normalized);
+      const h = await getIntroHistory(sessionId);
+      setHistory(h.attempts || []);
+      toast.success(normalized.passed ? "🎉 You Passed!" : "Keep practicing — you'll get there!");
+      speakText(`Intro evaluation complete. Your score is ${normalized.score}. ${normalized.feedback}`);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "Evaluation failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const speakText = (text: string) => {
+    if (!voiceEnabled || typeof window === "undefined" || !window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    const voice = availableVoices.find((v) => v.name === selectedVoiceName);
+    if (voice) utterance.voice = voice;
+    window.speechSynthesis.speak(utterance);
   };
 
   const formatTime = (s: number) => `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
@@ -164,9 +227,9 @@ export default function IntroPage() {
           <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
             {/* Ideal template */}
             <div className="card" style={{ padding: 28 }}>
-              <h3 style={{ fontSize: 15, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 12 }}>💡 Ideal Intro Template</h3>
+              <h3 style={{ fontSize: 15, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 12 }}>💡 Your Custom Generated Intro Template</h3>
               <pre style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.8, whiteSpace: "pre-wrap" }}>
-                {IDEAL_INTRO}
+                {idealIntro}
               </pre>
             </div>
 
@@ -236,13 +299,37 @@ export default function IntroPage() {
                     >
                       {loading
                         ? <><div className="animate-spin" style={{ width: 16, height: 16, border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "white", borderRadius: "50%" }}></div> Evaluating...</>
-                        : <><Play size={16} /> Evaluate Intro</>}
+                        : <><Play size={16} /> Evaluate Audio</>}
                     </button>
                     <button className="btn-secondary" onClick={reset} title="Record Again" style={{ padding: "12px 16px" }}>
                       <RotateCcw size={16} />
                     </button>
                   </div>
                 </div>
+              )}
+
+              {!audioUrl && (
+                  <div style={{ marginTop: 24, paddingTop: 24, borderTop: "1px solid var(--border)" }}>
+                    <h4 style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>Or Type Your Intro</h4>
+                    <textarea 
+                       className="input-field" 
+                       rows={4} 
+                       placeholder="Type your introduction here..." 
+                       value={introText}
+                       onChange={(e) => setIntroText(e.target.value)}
+                       disabled={loading || recording}
+                       style={{ marginBottom: 12 }}
+                    />
+                    <button 
+                      className="btn-primary" 
+                      onClick={handleEvaluateText} 
+                      disabled={loading || !introText.trim() || recording}
+                      style={{ width: "100%", padding: "10px 0", display: "flex", justifyContent: "center", gap: 6 }}
+                    >
+                      {loading ? <div className="animate-spin" style={{ width: 16, height: 16, border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "white", borderRadius: "50%" }}></div> : <Send size={16} />}
+                      Evaluate Text
+                    </button>
+                  </div>
               )}
             </div>
           </div>
@@ -252,6 +339,15 @@ export default function IntroPage() {
             {/* Current result */}
             {result ? (
               <div className="card animate-fadeIn" style={{ padding: 32 }}>
+                {/* Voice toggle */}
+                <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16 }}>
+                    <button onClick={() => {
+                        setVoiceEnabled(!voiceEnabled);
+                        if (voiceEnabled && window.speechSynthesis) window.speechSynthesis.cancel();
+                    }} className="btn-secondary" style={{ padding: "6px 12px", gap: 6, fontSize: 12 }}>
+                        {voiceEnabled ? <Volume2 size={14}/> : <VolumeX size={14} />} {voiceEnabled ? "TTS On" : "TTS Off"}
+                    </button>
+                </div>
                 {/* Score */}
                 <div style={{ textAlign: "center", marginBottom: 28 }}>
                   <div
@@ -311,9 +407,21 @@ export default function IntroPage() {
                   </div>
                 )}
                 {result.improvements && (
-                  <div>
+                  <div style={{ marginBottom: 20 }}>
                     <h4 style={{ fontSize: 13, fontWeight: 600, color: "var(--warning)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.5px" }}>⟳ Improvements</h4>
                     <p style={{ color: "var(--text-secondary)", fontSize: 14, lineHeight: 1.7 }}>{result.improvements}</p>
+                  </div>
+                )}
+
+                {/* Pipeline Progression Button */}
+                {result.passed && (
+                  <div style={{ marginTop: 24, paddingTop: 24, borderTop: "1px solid var(--border)", textAlign: "center" }}>
+                    <p style={{ color: "var(--text-secondary)", marginBottom: 16 }}>You've unlocked the final stage!</p>
+                    <Link href="/interview">
+                      <button className="btn-primary" style={{ width: "100%", padding: "14px 0", fontSize: 16 }}>
+                        Proceed to Mock Interviews
+                      </button>
+                    </Link>
                   </div>
                 )}
               </div>

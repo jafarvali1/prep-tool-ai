@@ -89,7 +89,7 @@ from database import engine, Base
 import models  # register models
 
 from routers import setup, resume, case_study, intro
-from routers import resume_ai, mock_interview, report
+from routers import resume_ai, mock_interview, report, project
 
 app = FastAPI(
     title="AI Candidate Preparation Platform",
@@ -146,6 +146,7 @@ app.include_router(case_study.router)
 app.include_router(intro.router)
 app.include_router(mock_interview.router)
 app.include_router(report.router)
+app.include_router(project.router)
 
 @app.get("/")
 def root():

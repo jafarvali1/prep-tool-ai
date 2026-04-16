@@ -84,6 +84,11 @@ export async function evaluateIntroText(sessionId: string, introText: string) {
   return res.data;
 }
 
+export async function getDynamicIntroTemplate(sessionId: string) {
+  const res = await api.get("/api/intro/dynamic-template", { params: { session_id: sessionId } });
+  return res.data;
+}
+
 export async function getIntroHistory(sessionId: string) {
   const res = await api.get("/api/intro/history", { params: { session_id: sessionId } });
   return res.data;
@@ -109,6 +114,24 @@ export async function saveProjectBrief(sessionId: string, projectBrief: string) 
   const res = await api.post("/api/resume/project-brief", {
     session_id: sessionId,
     project_brief: projectBrief,
+  });
+  return res.data;
+}
+
+// ─── Project Explanation (Interactive) ───────────────────────
+export async function evaluateProjectExplanation(sessionId: string, explanation: string) {
+  const res = await api.post("/api/project/evaluate-explanation", {
+    session_id: sessionId,
+    explanation,
+  });
+  return res.data;
+}
+
+export async function generateFromUseCase(sessionId: string, explanation: string, useCaseDetails: string) {
+  const res = await api.post("/api/project/generate-use-case", {
+    session_id: sessionId,
+    explanation,
+    use_case_details: useCaseDetails,
   });
   return res.data;
 }
