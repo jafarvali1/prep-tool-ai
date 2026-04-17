@@ -633,10 +633,34 @@ export default function RealisticInterviewPage() {
                            <h3 className="text-base md:text-lg font-bold font-['Outfit'] text-on-surface mb-5 sm:mb-6 inline-flex items-center gap-2 bg-primary-container/20 px-4 py-2 rounded-full border border-primary-container/30">Round {idx+1}: {t.stage}</h3>
                            <div className="space-y-3 sm:space-y-4 mt-1">
                                {t.chat.map((m: any, mIdx: number) => (
-                                   <div key={mIdx} className={`rounded-2xl px-4 py-4 sm:px-5 sm:py-4 shadow-sm ${m.sender === 'bot' ? 'bg-surface border border-outline-variant/20 text-left' : 'bg-primary-container/10 border border-primary-container/30 text-right ml-6 sm:ml-12 md:ml-20 max-w-full'}`}>
-                                       <span className={`text-[10px] font-bold uppercase tracking-wider block mb-2 ${m.sender === 'bot' ? 'text-secondary-container' : 'text-primary-container'}`}>{m.sender === 'bot' ? 'Interviewer' : `${candidateName || 'You'}`}</span>
-                                       <p className="text-[15px] leading-relaxed text-on-surface whitespace-pre-wrap break-words">{m.content}</p>
-                                   </div>
+                                    <div key={mIdx} className={`rounded-2xl px-5 py-5 sm:px-6 sm:py-5 shadow-sm ${m.sender === 'bot' ? 'bg-surface border border-outline-variant/20 text-left' : 'bg-primary-container/10 border border-primary-container/30 text-right ml-6 sm:ml-12 md:ml-20 max-w-full'}`}>
+                                        <span className={`text-[10px] font-bold uppercase tracking-wider block mb-3 ${m.sender === 'bot' ? 'text-secondary-container' : 'text-primary-container'}`}>{m.sender === 'bot' ? 'Interviewer' : `${candidateName || 'You'}`}</span>
+                                        <div className="text-[15px] leading-relaxed text-on-surface whitespace-pre-wrap break-words">
+                                            <ReactMarkdown components={interviewChatMarkdownComponents}>{m.content}</ReactMarkdown>
+                                        </div>
+                                        {m.evaluation && (
+                                            <div className="mt-5 space-y-3 rounded-xl border border-outline-variant/30 bg-surface-container-highest px-4 py-4 text-left shadow-inner">
+                                                <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] font-bold uppercase tracking-wider text-on-surface-variant">
+                                                    <span>Evaluation Score</span>
+                                                    <span className="tabular-nums rounded-lg border border-primary-container/30 bg-primary-container/15 px-3 py-1 text-sm font-semibold text-primary-container">
+                                                        {m.evaluation.overall_score}/10
+                                                    </span>
+                                                </div>
+                                                {m.evaluation.gap_analysis?.length > 0 && (
+                                                    <div className="mt-3 text-sm text-on-surface">
+                                                        <span className="mb-2 block text-xs font-semibold text-error">Gap Analysis:</span>
+                                                        <ul className="list-disc space-y-2 pl-4 text-[13px] leading-relaxed text-on-surface-variant">
+                                                            {m.evaluation.gap_analysis.map((gap: string, gIdx: number) => (
+                                                                <li key={gIdx} className="break-words">
+                                                                    {gap}
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
                                ))}
                            </div>
                        </div>
@@ -720,26 +744,17 @@ export default function RealisticInterviewPage() {
                     </div>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
-                    {readyForNextStage && currentStage === 1 && (
-                      <button
-                        type="button"
-                        onClick={handleRetakeStage}
-                        className="shrink-0 rounded-full border border-white/15 bg-white/[0.06] px-4 py-2 text-center text-[10px] font-bold uppercase tracking-wide text-white/80 transition-all hover:bg-white/10"
-                      >
-                        Retake intro
-                      </button>
-                    )}
                     <button
                       type="button"
                       onClick={nextStage}
                       disabled={loading}
-                      className={`shrink-0 rounded-full border px-4 py-2 text-center text-[10px] font-bold uppercase tracking-wide transition-all ${
+                      className={`shrink-0 rounded-full px-5 py-2 text-center text-[11px] font-extrabold uppercase tracking-widest transition-all duration-300 ${
                         readyForNextStage
-                          ? "border-[#008a3e] bg-[#008a3e] text-white shadow-md shadow-[#008a3e]/25"
-                          : "border-white/15 bg-white/[0.06] text-white/80 hover:bg-white/10"
+                          ? "animate-pulse border-transparent bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-[0_0_20px_rgba(16,185,129,0.4)] ring-2 ring-emerald-500/50 ring-offset-2 ring-offset-[#111118]"
+                          : "border border-white/15 bg-white/[0.06] text-white/80 hover:bg-white/10"
                       } disabled:opacity-45`}
                     >
-                      Next stage
+                      {currentStage === 5 ? "Finish interview" : "Next stage"}
                     </button>
                   </div>
                 </div>
@@ -761,7 +776,7 @@ export default function RealisticInterviewPage() {
                     className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-white/8"
                     style={{ backgroundColor: CHAT_BG }}
                   >
-                    <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-4 py-5 md:space-y-5 md:px-5 md:py-6">
+                    <div className="min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-contain px-6 py-6 md:space-y-8 md:px-8 md:py-8">
                       {messages.length === 0 && !loading && (
                         <p className="text-center text-sm text-white/35">Messages will appear here.</p>
                       )}
@@ -770,7 +785,7 @@ export default function RealisticInterviewPage() {
                           {m.sender === "user" ? (
                             <div className="flex w-full justify-end">
                               <div
-                                className="inline-block max-w-[min(90%,32rem)] rounded-2xl rounded-br-md px-4 py-2.5 text-left text-[15px] leading-relaxed text-white shadow-md"
+                                className="inline-block max-w-[min(90%,32rem)] rounded-3xl rounded-br-md px-6 py-4 text-left text-[15px] leading-relaxed text-white shadow-md tracking-wide"
                                 style={{ backgroundColor: CHAT_GREEN }}
                               >
                                 <p className="whitespace-pre-wrap break-words">{m.content}</p>
@@ -779,7 +794,7 @@ export default function RealisticInterviewPage() {
                           ) : (
                             <div className="flex w-full justify-start">
                               <div
-                                className="w-full max-w-full rounded-2xl rounded-bl-md border border-white/10 px-4 py-3.5 shadow-sm sm:max-w-[min(100%,42rem)] md:px-5 md:py-4"
+                                className="w-full max-w-full rounded-3xl rounded-bl-md border border-white/10 px-6 py-5 shadow-lg sm:max-w-[min(100%,46rem)] md:px-8 md:py-6"
                                 style={{ backgroundColor: CHAT_ASSISTANT_SURFACE }}
                               >
                                 <div className="mb-2.5 flex items-center gap-2">
@@ -819,13 +834,13 @@ export default function RealisticInterviewPage() {
                         </motion.div>
                       ))}
                       {loading && (
-                        <div className="flex w-full justify-start">
+                        <div className="flex w-full justify-start mt-4">
                           <div
-                            className="inline-flex items-center gap-3 rounded-2xl border border-white/10 px-4 py-3 text-sm text-[#a8a8a8]"
-                            style={{ backgroundColor: CHAT_ASSISTANT_SURFACE }}
+                            className="inline-flex items-center gap-3 rounded-2xl border border-white/10 px-5 py-3 text-sm tracking-wide text-[#d4d4d4] shadow-md backdrop-blur-md"
+                            style={{ backgroundColor: "rgba(0,0,0,0.3)" }}
                           >
-                            <Loader2 className="h-4 w-4 shrink-0 animate-spin" style={{ color: CHAT_GREEN }} aria-hidden />
-                            Evaluating…
+                            <Loader2 className="h-4 w-4 shrink-0 animate-spin text-emerald-400" aria-hidden />
+                            {messages.length === 0 ? "Uplinking to next module..." : "Evaluating and parsing context..."}
                           </div>
                         </div>
                       )}
