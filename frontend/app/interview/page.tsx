@@ -353,7 +353,7 @@ export default function RealisticInterviewPage() {
     }
   };
 
-  const nextStage = () => {
+  const nextStage = async () => {
     setTranscript(prev => [...prev, { stage: STAGES[currentStage-1].name, chat: [...messages] }]);
     const next = currentStage + 1;
     if (next <= 5) {
@@ -362,7 +362,19 @@ export default function RealisticInterviewPage() {
       setTimeLeft(120);
       setAnsweredInStage(0);
       setReadyForNextStage(false);
-      addBotMessage(dynamicStageQuestions[next - 1]);
+      
+      setLoading(true);
+      try {
+        const { getStageQuestions } = await import("@/lib/api");
+        const data = await getStageQuestions(sessionId, STAGES[next - 1].name);
+        if (data && data.questions && data.questions.length > 0) {
+           addBotMessage(data.questions[0]);
+        }
+      } catch (err) {
+        toast.error("Failed to load question for next stage.");
+      } finally {
+        setLoading(false);
+      }
     } else {
       setCurrentStage(6);
       toast.success("Interview Completed!");
@@ -454,10 +466,10 @@ export default function RealisticInterviewPage() {
       let finalReply = replyText;
 
       if (newCount >= target) {
-        finalReply = `${replyText}\n\nSection complete (${newCount}/${target}). Click "Next Stage" when ready.`;
+        finalReply = `Thank you for completing this answer. I have recorded your response and analyzed your technical gaps below.\n\n✅ Section complete (${newCount}/${target}). Click "Next Stage" when ready.`;
         setReadyForNextStage(true);
       } else {
-        finalReply = `${replyText}\n\nQuestion ${newCount + 1}/${target}: ${data.reply}`;
+        finalReply = `Question ${newCount + 1}/${target}:\n\n${replyText}`;
         setReadyForNextStage(false);
       }
 

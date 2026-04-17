@@ -6,15 +6,15 @@ from services.evaluator import coach_answer
 router = APIRouter(prefix="/api/interview", tags=["interview"])
 
 @router.get("/stage-questions")
-def get_stage_questions(session_id: str, api_key: str = None):
+def get_stage_questions(session_id: str, stage_name: str = "General Mock", api_key: str = None):
     """
-    Adapter for frontend: start the interview loop and return the first question.
+    Adapter for frontend: start the interview loop for a specific stage and return the first question.
     """
     try:
         q = call_llm_with_context(
             user_id=session_id,
-            prompt="Generate the very first interview question for a 'General Mock / Behavioral' round based on the candidate's resume. Ask exactly one question. Do NOT ask them to introduce themselves.",
-            system_prompt="You are a strict and professional technical recruiter starting a mock interview.",
+            prompt=f"Generate the very first interview question exclusively for a '{stage_name}' round. \nCRITICAL RULES:\n1. Your question MUST be hyper-specific and uniquely tailored to the candidate's actual projects, stack, and experience provided in the context.\n2. Do NOT ask generic behavioral questions without tying them directly to a specific company or project listed in their data.\n3. Ask exactly one question. Do NOT ask them to introduce themselves.",
+            system_prompt=f"You are a strict and professional technical recruiter starting a mock interview for the {stage_name} round.",
             api_key=api_key,
             response_format="text"
         )
@@ -49,7 +49,7 @@ def evaluate_live(data: LiveEvalRequest):
         
         # 2. Next question
         stage_context = f"You are actively conducting the '{data.stage_name}' stage of the interview."
-        prompt_instruction = f"Previous Conversation Context:\n{data.previous_context}\n\nTask: Generate the NEXT interview question specifically tailored for the '{data.stage_name}' round. \nCRITICAL RULES:\n1. NEVER repeat a concept or question present in the Previous Conversation Context.\n2. Do NOT provide feedback in this response, ONLY ask the next question.\n3. Make it challenging and perfectly aligned with the {data.stage_name} format (e.g. if System Design, ask scaling architectures. If Hiring Manager, ask behavioral/leadership)."
+        prompt_instruction = f"Previous Conversation Context:\n{data.previous_context}\n\nTask: Generate the NEXT interview question specifically tailored for the '{data.stage_name}' round. \nCRITICAL RULES:\n1. NEVER repeat a concept or question present in the Previous Conversation Context.\n2. The question MUST be hyper-specific and uniquely rooted in the candidate's actual resume, companies, and project data provided in the system context. Avoid generic questions.\n3. Do NOT provide feedback in this response, ONLY ask the next question.\n4. Make it perfectly aligned with the {data.stage_name} format (e.g. if System Design, ask scaling architectures related to their past work. If Hiring Manager, ask behavioral questions tied to their past projects)."
         
         next_q = call_llm_with_context(
             user_id=data.session_id,
