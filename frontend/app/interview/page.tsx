@@ -130,12 +130,11 @@ const interviewChatMarkdownComponents: Partial<Components> = {
 };
 
 const STAGES = [
-  { id: 1, name: "AI Intro Test" },
-  { id: 2, name: "Mock Section" },
-  { id: 3, name: "Hiring Manager" },
-  { id: 4, name: "Technical Panel" },
-  { id: 5, name: "System Design" },
-  { id: 6, name: "Coding" },
+  { id: 1, name: "Mock Section" },
+  { id: 2, name: "Hiring Manager" },
+  { id: 3, name: "Technical Panel" },
+  { id: 4, name: "System Design" },
+  { id: 5, name: "Coding" },
 ];
 
 export default function RealisticInterviewPage() {
@@ -164,12 +163,11 @@ export default function RealisticInterviewPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [transcript, setTranscript] = useState<any[]>([]);
   const [stageCounts, setStageCounts] = useState<Record<number, number>>({
-    1: 1,   // intro always 1
-    2: 1,  // mock section
-    3: 1,   // hiring manager
-    4: 1,  // technical panel
-    5: 1,   // system design
-    6: 1,   // coding
+    1: 1,  // mock section
+    2: 1,  // hiring manager
+    3: 1,  // technical panel
+    4: 1,  // system design
+    5: 1,  // coding
   });
   const [answeredInStage, setAnsweredInStage] = useState(0);
   const [readyForNextStage, setReadyForNextStage] = useState(false);
@@ -215,7 +213,7 @@ export default function RealisticInterviewPage() {
 
   useEffect(() => {
     let timer: any;
-    if (currentStage > 0 && currentStage <= 6 && timeLeft > 0) {
+    if (currentStage > 0 && currentStage <= 5 && timeLeft > 0) {
       timer = setInterval(() => setTimeLeft(t => t - 1), 1000);
     } else if (timeLeft === 0 && !loading) {
         toast("Time's up for this question!");
@@ -358,7 +356,7 @@ export default function RealisticInterviewPage() {
   const nextStage = () => {
     setTranscript(prev => [...prev, { stage: STAGES[currentStage-1].name, chat: [...messages] }]);
     const next = currentStage + 1;
-    if (next <= 6) {
+    if (next <= 5) {
       setCurrentStage(next);
       setMessages([]);
       setTimeLeft(120);
@@ -366,7 +364,7 @@ export default function RealisticInterviewPage() {
       setReadyForNextStage(false);
       addBotMessage(dynamicStageQuestions[next - 1]);
     } else {
-      setCurrentStage(7);
+      setCurrentStage(6);
       toast.success("Interview Completed!");
     }
   };
@@ -455,17 +453,7 @@ export default function RealisticInterviewPage() {
       const newCount = answeredInStage + 1;
       let finalReply = replyText;
 
-      if (currentStage === 1) {
-        const score = data?.evaluation?.overall_score || 0;
-        const retryRequired = data?.evaluation?.retry_required;
-        
-        if (retryRequired || score < 7.5) {
-            finalReply = `${replyText}\n\nIntro evaluation complete, but there's room for improvement. You may retake it for a better score or proceed to the next stage.`;
-        } else {
-            finalReply = `${replyText}\n\nGreat. Intro evaluation is complete. Your introduction was solid. Please click "Next Stage" to continue.`;
-        }
-        setReadyForNextStage(true);
-      } else if (newCount >= target) {
+      if (newCount >= target) {
         finalReply = `${replyText}\n\nSection complete (${newCount}/${target}). Click "Next Stage" when ready.`;
         setReadyForNextStage(true);
       } else {
@@ -495,7 +483,7 @@ export default function RealisticInterviewPage() {
   };
 
   const handleNeedHelp = async () => {
-    if (loading || currentStage < 1 || currentStage > 6) return;
+    if (loading || currentStage < 1 || currentStage > 5) return;
     setAnswer("I am not sure about this answer. Please suggest a good answer.");
     setTimeout(() => handleSend(), 0);
   };
@@ -616,7 +604,7 @@ export default function RealisticInterviewPage() {
 
         <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 md:gap-8 xl:grid-cols-12">
           <AnimatePresence mode="wait">
-          {currentStage === 7 ? (
+          {currentStage === 6 ? (
              <motion.div key="stage7" initial={{opacity:0, scale:0.98}} animate={{opacity:1, scale:1}} exit={{opacity:0}} className="lg:col-span-12 rounded-3xl bg-surface-container-low/40 backdrop-blur-2xl p-6 sm:p-8 lg:p-10 border border-outline-variant/50 shadow-2xl min-h-[50vh] mb-10 lg:mb-16 w-full">
                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5 sm:gap-6 mb-8 sm:mb-10 pb-6 sm:pb-8 border-b border-outline-variant/20">
                    <div className="min-w-0 space-y-2">
@@ -644,51 +632,65 @@ export default function RealisticInterviewPage() {
                </div>
            </motion.div>
           ) : currentStage === 0 ? (
-            <motion.div key="stage0" initial={{opacity:0, scale:0.98}} animate={{opacity:1, scale:1}} exit={{opacity:0, y:-12}} className="relative flex min-h-[52vh] flex-col items-center overflow-hidden rounded-3xl border border-outline-variant/30 bg-surface-container-lowest/35 px-6 py-14 text-center shadow-2xl backdrop-blur-md md:p-20 lg:col-span-12">
-              <div className="pointer-events-none absolute -right-40 -top-40 h-[28rem] w-[28rem] rounded-full bg-primary-container/20 blur-[100px]" />
-              <div className="pointer-events-none absolute -bottom-40 -left-40 h-[28rem] w-[28rem] rounded-full bg-secondary-container/20 blur-[100px]" />
-              <div className="relative mb-8 flex h-20 w-20 items-center justify-center rounded-2xl border border-primary-container/30 bg-primary-container/20 shadow-lg ring-1 ring-primary-container/25">
-                <Video size={40} className="text-primary-container" aria-hidden />
+            <motion.div key="stage0" initial={{opacity:0, scale:0.98}} animate={{opacity:1, scale:1}} exit={{opacity:0, y:-12}} className="relative flex min-h-[52vh] flex-col items-center overflow-hidden rounded-3xl border border-white/10 bg-[#111118]/80 px-6 py-14 shadow-2xl backdrop-blur-2xl md:p-20 lg:col-span-12">
+              <div className="pointer-events-none absolute -right-40 -top-40 h-[30rem] w-[30rem] rounded-full bg-primary-container/20 blur-[120px]" />
+              <div className="pointer-events-none absolute -bottom-40 -left-40 h-[30rem] w-[30rem] rounded-full bg-secondary-container/20 blur-[120px]" />
+              
+              <div className="relative mb-6 flex h-24 w-24 items-center justify-center rounded-[2rem] border border-primary-container/30 bg-primary-container/10 shadow-[0_0_40px_rgba(var(--primary-container-rgb),0.3)] ring-1 ring-primary-container/25">
+                <Video size={48} className="text-primary-container drop-shadow-md" aria-hidden />
+                <div className="absolute inset-0 rounded-[2rem] border-t border-white/20"></div>
               </div>
-              <h2 className="relative mb-4 max-w-2xl font-['Outfit'] text-3xl font-bold tracking-tight text-on-surface bg-gradient-to-r from-on-surface to-on-surface-variant bg-clip-text text-transparent md:text-5xl">Start your mock interview</h2>
-              <p className="relative mb-12 max-w-lg text-base leading-relaxed text-on-surface-variant md:mb-14 md:text-lg">
-                Six stages tailored to your resume — intro through coding. Adjust question counts, then step in when you are ready.
+              
+              <h2 className="relative mb-4 max-w-3xl text-center font-['Outfit'] text-4xl font-extrabold tracking-tight text-white drop-shadow-sm md:text-6xl">
+                Configure your <span className="bg-gradient-to-r from-primary-container to-secondary-container bg-clip-text text-transparent">Interview Protocol</span>
+              </h2>
+              <p className="relative mb-14 max-w-2xl text-center text-lg leading-relaxed text-white/50 md:text-xl">
+                Fine-tune the rigorousness of your 5-stage simulation. We've bypassed the intro module to jump straight into dynamic technical and behavioral assessments.
               </p>
-              <div className="relative my-10 w-full max-w-2xl text-left sm:my-12 md:my-14">
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-x-8 sm:gap-y-7">
-                <label className="block text-base font-medium text-on-surface sm:text-lg">Mock section
-                  <select className="mt-2 w-full min-h-11 rounded-xl border border-outline-variant/50 bg-surface-container-high px-3.5 py-2.5 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary-container/40" value={stageCounts[2]} onChange={(e) => setStageCounts((p) => ({ ...p, 2: Number(e.target.value) }))}>
-                    {[...Array(20)].map((_, i) => <option key={i} value={i+1}>{i+1} questions</option>)}
-                  </select>
-                </label>
-                <label className="block text-base font-medium text-on-surface sm:text-lg">Hiring manager
-                  <select className="mt-2 w-full min-h-11 rounded-xl border border-outline-variant/50 bg-surface-container-high px-3.5 py-2.5 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary-container/40" value={stageCounts[3]} onChange={(e) => setStageCounts((p) => ({ ...p, 3: Number(e.target.value) }))}>
-                    {[...Array(20)].map((_, i) => <option key={i} value={i+1}>{i+1} questions</option>)}
-                  </select>
-                </label>
-                <label className="block text-base font-medium text-on-surface sm:text-lg">Technical panel
-                  <select className="mt-2 w-full min-h-11 rounded-xl border border-outline-variant/50 bg-surface-container-high px-3.5 py-2.5 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary-container/40" value={stageCounts[4]} onChange={(e) => setStageCounts((p) => ({ ...p, 4: Number(e.target.value) }))}>
-                     {[...Array(20)].map((_, i) => <option key={i} value={i+1}>{i+1} questions</option>)}
-                  </select>
-                </label>
-                <label className="block text-base font-medium text-on-surface sm:text-lg">System design / coding
-                  <select className="mt-2 w-full min-h-11 rounded-xl border border-outline-variant/50 bg-surface-container-high px-3.5 py-2.5 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary-container/40" value={stageCounts[5]} onChange={(e) => setStageCounts((p) => ({ ...p, 5: Number(e.target.value), 6: Number(e.target.value) }))}>
-                     {[...Array(20)].map((_, i) => <option key={i} value={i+1}>{i+1} each</option>)}
-                  </select>
-                </label>
+
+              <div className="relative w-full max-w-5xl">
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5">
+                  {[
+                    { id: 1, name: "General Mock", icon: UserRound, color: "from-blue-500/20 to-cyan-500/5", border: "border-blue-500/30" },
+                    { id: 2, name: "Hiring Manager", icon: MessageSquare, color: "from-purple-500/20 to-fuchsia-500/5", border: "border-purple-500/30" },
+                    { id: 3, name: "Tech Panel", icon: Sparkles, color: "from-emerald-500/20 to-teal-500/5", border: "border-emerald-500/30" },
+                    { id: 4, name: "System Design", icon: PenSquare, color: "from-orange-500/20 to-red-500/5", border: "border-orange-500/30" },
+                    { id: 5, name: "Live Coding", icon: Code2, color: "from-indigo-500/20 to-violet-500/5", border: "border-indigo-500/30" }
+                  ].map((stage) => (
+                    <div key={stage.id} className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border ${stage.border} bg-white/[0.02] p-5 backdrop-blur-md transition-all hover:-translate-y-1 hover:bg-white/[0.04] hover:shadow-xl`}>
+                      <div className={`absolute inset-0 bg-gradient-to-br ${stage.color} opacity-50`} />
+                      <div className="relative z-10 mb-4 flex items-center justify-between">
+                        <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-black/40 shadow-inner`}>
+                          <stage.icon size={18} className="text-white/80" />
+                        </div>
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-white/30">Stage {stage.id}</span>
+                      </div>
+                      <div className="relative z-10">
+                        <h3 className="mb-3 font-['Outfit'] text-base font-bold text-white/90">{stage.name}</h3>
+                        <div className="relative">
+                          <select 
+                            className="w-full cursor-pointer appearance-none rounded-xl border border-white/10 bg-black/50 px-3 py-2.5 text-sm font-medium text-white/80 outline-none transition-colors hover:border-white/25 focus:border-primary-container focus:ring-1 focus:ring-primary-container"
+                            value={stageCounts[stage.id]} 
+                            onChange={(e) => setStageCounts((p) => ({ ...p, [stage.id]: Number(e.target.value) }))}
+                          >
+                            {[...Array(20)].map((_, i) => <option key={i} value={i+1} className="bg-[#1a1a24] text-white">{i+1} Questions</option>)}
+                          </select>
+                          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-white/40">
+                             <svg className="h-4 w-4 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
-              <button type="button" disabled={isGenerating} onClick={handleStart} className="relative mt-10 inline-flex min-h-11 min-w-[200px] items-center justify-center gap-3 rounded-2xl border border-outline-variant bg-surface-container-high px-10 py-4 text-base font-bold text-on-surface transition-all duration-300 hover:border-primary-container hover:shadow-lg hover:ring-1 hover:ring-primary-container/35 disabled:opacity-45 md:mt-12 md:py-5 md:text-lg">
+
+              <button type="button" disabled={isGenerating} onClick={handleStart} className="group relative mt-14 overflow-hidden rounded-2xl bg-white px-12 py-5 font-['Outfit'] text-lg font-bold tracking-wide text-black transition-all hover:scale-105 hover:shadow-[0_0_40px_rgba(255,255,255,0.3)] disabled:opacity-50">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent opacity-0 transition-opacity group-hover:animate-shimmer group-hover:opacity-100"></div>
                 {isGenerating ? (
-                  <>
-                    <Loader2 className="h-5 w-5 shrink-0 animate-spin" aria-hidden />
-                    Preparing…
-                  </>
+                  <span className="flex items-center gap-3"><Loader2 className="h-5 w-5 animate-spin" /> Uplinking...</span>
                 ) : (
-                  <>
-                    <Play size={22} className="shrink-0" aria-hidden />
-                    Begin session
-                  </>
+                  <span className="flex items-center gap-3"><Play size={20} className="fill-current" /> Initialize Protocol</span>
                 )}
               </button>
             </motion.div>
@@ -864,7 +866,7 @@ export default function RealisticInterviewPage() {
                     <button
                       type="button"
                       onClick={toggleCandidateVoice}
-                      disabled={loading || currentStage < 1 || currentStage > 6}
+                      disabled={loading || currentStage < 1 || currentStage > 5}
                       aria-label={isRecordingAnswer ? "Stop dictation" : "Start dictation"}
                       className={`mb-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors ${
                         isRecordingAnswer ? "bg-red-500/20 text-red-400" : "text-white/70 hover:bg-white/10 hover:text-white"
@@ -912,10 +914,10 @@ export default function RealisticInterviewPage() {
                     <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-primary-container shadow-lg ring-2 ring-primary-container/50" aria-hidden />
                     Live
                   </span>
-                  <span className={`justify-self-center whitespace-nowrap rounded-lg border px-4 py-2 text-sm font-bold tabular-nums ${timeLeft <= 30 ? "animate-pulse border-error/40 bg-error/15 text-error" : "border-outline-variant/50 bg-surface-container-lowest text-on-surface"}`}>
+                  <span className={`justify-self-center whitespace-nowrap rounded-lg border px-4 py-2 text-sm font-bold tabular-nums ${timeLeft <= 30 ? "animate-pulse border-red-500/40 bg-red-500/15 text-red-400" : "border-white/10 bg-white/5 text-white/90"}`}>
                     {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, "0")}
                   </span>
-                  <span className="justify-self-end text-right text-xs font-bold uppercase tracking-wider text-on-surface-variant">Round {currentStage}<span className="opacity-50">/6</span></span>
+                  <span className="justify-self-end text-right text-xs font-bold uppercase tracking-wider text-white/50">Round {currentStage}<span className="opacity-40">/5</span></span>
                 </div>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-1">
                   <div className={`relative flex aspect-video items-center justify-center overflow-hidden rounded-3xl border bg-surface-container-lowest shadow-2xl transition-all duration-500 ${aiSpeaking ? "border-primary-container shadow-lg ring-2 ring-primary-container/30" : "border-outline-variant/30"}`}>

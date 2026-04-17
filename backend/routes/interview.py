@@ -13,8 +13,8 @@ def get_stage_questions(session_id: str, api_key: str = None):
     try:
         q = call_llm_with_context(
             user_id=session_id,
-            prompt="Generate the first technical interview question. Do not start with generic greetings.",
-            system_prompt="You are a strict technical interviewer.",
+            prompt="Generate the very first interview question for a 'General Mock / Behavioral' round based on the candidate's resume. Ask exactly one question. Do NOT ask them to introduce themselves.",
+            system_prompt="You are a strict and professional technical recruiter starting a mock interview.",
             api_key=api_key,
             response_format="text"
         )
@@ -48,10 +48,13 @@ def evaluate_live(data: LiveEvalRequest):
         coaching = coach_answer(data.session_id, data.user_answer, feedback, api_key=data.api_key)
         
         # 2. Next question
+        stage_context = f"You are actively conducting the '{data.stage_name}' stage of the interview."
+        prompt_instruction = f"Previous Conversation Context:\n{data.previous_context}\n\nTask: Generate the NEXT interview question specifically tailored for the '{data.stage_name}' round. \nCRITICAL RULES:\n1. NEVER repeat a concept or question present in the Previous Conversation Context.\n2. Do NOT provide feedback in this response, ONLY ask the next question.\n3. Make it challenging and perfectly aligned with the {data.stage_name} format (e.g. if System Design, ask scaling architectures. If Hiring Manager, ask behavioral/leadership)."
+        
         next_q = call_llm_with_context(
             user_id=data.session_id,
-            prompt=f"Previous Context:\n{data.previous_context}\n\nGenerate the next technical interview question. Do not repeat.",
-            system_prompt="You are a strict technical interviewer.",
+            prompt=prompt_instruction,
+            system_prompt=f"You are a strict tech industry interviewer. {stage_context}",
             api_key=data.api_key,
             response_format="text"
         )
@@ -59,7 +62,7 @@ def evaluate_live(data: LiveEvalRequest):
         return {
             "reply": next_q,
             "evaluation": {
-                "overall_score": 7, # Default mock score or parse from coaching
+                "overall_score": coaching.get("score", 7),
                 "gap_analysis": coaching.get("mistakes", []),
                 "improved_answer": coaching.get("better_version", "")
             }
