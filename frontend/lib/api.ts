@@ -24,14 +24,14 @@ export async function uploadResume(sessionId: string, file: File) {
   const form = new FormData();
   form.append("session_id", sessionId);
   form.append("file", file);
-  const res = await api.post("/api/resume/upload", form, {
+  const res = await api.post("/api/setup/resume", form, {
     headers: { "Content-Type": "multipart/form-data" },
   });
   return res.data;
 }
 
 export async function getResumeSummary(sessionId: string) {
-  const res = await api.get("/api/resume/summary", { params: { session_id: sessionId } });
+  const res = await api.get("/api/setup/summary", { params: { session_id: sessionId } });
   return res.data;
 }
 
@@ -56,7 +56,7 @@ export async function generateCaseStudyFromTemplate(sessionId: string, projectDe
 }
 
 export async function getCaseStudyHistory(sessionId: string) {
-  const res = await api.get("/api/case-study/history", { params: { session_id: sessionId } });
+  const res = await api.get("/api/project/history", { params: { session_id: sessionId } });
   return res.data;
 }
 
@@ -70,6 +70,8 @@ export async function evaluateIntro(sessionId: string, audioBlob: Blob) {
   const form = new FormData();
   form.append("session_id", sessionId);
   form.append("audio", audioBlob, "intro.webm");
+  const apiKey = typeof window !== "undefined" ? localStorage.getItem("openai_key") || "" : "";
+  form.append("api_key", apiKey);
   const res = await api.post("/api/intro/evaluate", form, {
     headers: { "Content-Type": "multipart/form-data" },
   });
@@ -77,15 +79,18 @@ export async function evaluateIntro(sessionId: string, audioBlob: Blob) {
 }
 
 export async function evaluateIntroText(sessionId: string, introText: string) {
+  const apiKey = typeof window !== "undefined" ? localStorage.getItem("openai_key") || "" : "";
   const res = await api.post("/api/intro/evaluate-text", {
     session_id: sessionId,
     intro_text: introText,
+    api_key: apiKey
   });
   return res.data;
 }
 
 export async function getDynamicIntroTemplate(sessionId: string) {
-  const res = await api.get("/api/intro/dynamic-template", { params: { session_id: sessionId } });
+  const apiKey = typeof window !== "undefined" ? localStorage.getItem("openai_key") || "" : "";
+  const res = await api.get("/api/intro/dynamic-template", { params: { session_id: sessionId, api_key: apiKey } });
   return res.data;
 }
 
@@ -182,17 +187,20 @@ export async function getLatestReport(sessionId: string) {
 }
 
 export async function getStageQuestions(sessionId: string) {
-  const res = await api.get("/api/mock-interview/stage-questions", { params: { session_id: sessionId } });
+  const apiKey = typeof window !== "undefined" ? localStorage.getItem("openai_key") || "" : "";
+  const res = await api.get("/api/interview/stage-questions", { params: { session_id: sessionId, api_key: apiKey } });
   return res.data;
 }
 
 export async function sendQuickChat(sessionId: string, currentQuestion: string, userAnswer: string, stageName: string, previousContext: string = "") {
-  const res = await api.post("/api/mock-interview/evaluate-live", {
+  const apiKey = typeof window !== "undefined" ? localStorage.getItem("openai_key") || "" : "";
+  const res = await api.post("/api/interview/evaluate-live", {
     session_id: sessionId,
     current_question: currentQuestion,
     user_answer: userAnswer,
     stage_name: stageName,
-    previous_context: previousContext
+    previous_context: previousContext,
+    api_key: apiKey
   });
   return res.data;
 }

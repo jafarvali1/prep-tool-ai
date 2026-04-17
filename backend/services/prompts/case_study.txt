@@ -1,0 +1,16 @@
+You are a senior AI architect.
+
+Convert this into a strong case study.
+
+Include:
+- Problem
+- Solution
+- Architecture
+- Components
+- Tech stack
+- Impact
+
+Make it interview-ready.
+
+Input:
+{{data}}

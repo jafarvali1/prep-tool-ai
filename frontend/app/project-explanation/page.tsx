@@ -11,63 +11,74 @@ export default function ProjectExplanationPage() {
   const router = useRouter();
   const [sessionId, setSessionId] = useState("");
   
-  // Step 1 State
-  const [explanation, setExplanation] = useState("");
-  const [evalLoading, setEvalLoading] = useState(false);
-  const [evaluation, setEvaluation] = useState<any>(null); // {score, missing_elements, feedback}
-  const [step1Passed, setStep1Passed] = useState(false);
+  // UI Step Logic
+  const [step, setStep] = useState<"fill" | "evaluate" | "case_study">("fill");
 
-  // Step 2 State
-  const [useCaseDetails, setUseCaseDetails] = useState("");
-  const [generating, setGenerating] = useState(false);
+  // Domain Fields
+  const [product, setProduct] = useState("");
+  const [architecture, setArchitecture] = useState("");
+  const [businessValue, setBusinessValue] = useState("");
+  const [role, setRole] = useState("");
+  const [impact, setImpact] = useState("");
+
+  const [loading, setLoading] = useState(false);
+  const [evaluation, setEvaluation] = useState<any>(null);
   const [generatedCaseStudy, setGeneratedCaseStudy] = useState<string | null>(null);
 
   useEffect(() => {
     const sid = localStorage.getItem("session_id");
     if (!sid) { router.push("/setup"); return; }
     setSessionId(sid);
+    const fetchContext = async () => {
+      try {
+        const res = await fetch(`http://localhost:8000/api/context/${sid}`);
+        if(res.ok) {
+           const data = await res.json();
+           if(data.project && data.project.product) {
+              setProduct(data.project.product);
+              setArchitecture(data.project.architecture);
+              setBusinessValue(data.project.business_value);
+              setRole(data.project.role);
+              setImpact(data.project.impact);
+           }
+        }
+      } catch(e) {}
+    };
+    fetchContext();
   }, [router]);
 
-  const handleEvaluate = async () => {
-    if (explanation.trim().length < 20) {
-      toast.error("Please provide a more detailed explanation.");
+  const submitProject = async () => {
+    if (!product || !architecture || !businessValue || !role || !impact) {
+      toast.error("Please fill out all fields deeply.");
       return;
     }
     
-    setEvalLoading(true);
+    setLoading(true);
     setEvaluation(null);
     try {
-      const result = await evaluateProjectExplanation(sessionId, explanation);
-      setEvaluation(result);
-      if (result.score >= 4) {
-        setStep1Passed(true);
-        toast.success(`Great job! Score: ${result.score}/5`);
+      const apiKey = localStorage.getItem("openai_key") || "";
+      const res = await fetch(`http://localhost:8000/api/project/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: sessionId, product, architecture, business_value: businessValue, role, impact, api_key: apiKey })
+      });
+      if(!res.ok) throw new Error("Evaluation failed");
+      const data = await res.json();
+      
+      setEvaluation(data.evaluation);
+      setGeneratedCaseStudy(data.case_study);
+      
+      if (data.evaluation.overall_score >= 7) {
+        toast.success(`Great job! Score: ${data.evaluation.overall_score}/10`);
+        setStep("case_study");
       } else {
-        setStep1Passed(false);
-        toast.error(`Score: ${result.score}/5. Needs more details.`);
+        toast.error(`Score: ${data.evaluation.overall_score}/10. Needs more details.`);
+        setStep("evaluate");
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.detail || "Evaluation failed");
+      toast.error("Process failed.");
     } finally {
-      setEvalLoading(false);
-    }
-  };
-
-  const handleGenerate = async () => {
-    if (useCaseDetails.trim().length < 20) {
-      toast.error("Please provide deeper use-case details.");
-      return;
-    }
-
-    setGenerating(true);
-    try {
-      const resp = await generateFromUseCase(sessionId, explanation, useCaseDetails);
-      setGeneratedCaseStudy(resp.content);
-      toast.success("Case Study Generated!");
-    } catch (error: any) {
-      toast.error(error.response?.data?.detail || "Generation failed");
-    } finally {
-      setGenerating(false);
+      setLoading(false);
     }
   };
 
@@ -108,101 +119,48 @@ export default function ProjectExplanationPage() {
           </p>
         </div>
 
-        {/* Step 1: Project Explanation */}
-        <div className={`card ${step1Passed ? 'border-success' : ''}`} style={{ padding: 32, marginBottom: 24, transition: "all 0.3s" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-            <h2 style={{ fontSize: 20, display: "flex", alignItems: "center", gap: 8 }}>
-              Step 1: Explain Your Project
-              {step1Passed && <CheckCircle size={20} color="var(--success)" />}
+        {/* Form Input fields */}
+        {step !== "case_study" && (
+          <div className="card" style={{ padding: 32, marginBottom: 24 }}>
+            <h2 style={{ fontSize: 20, marginBottom: 24, gap: 8 }}>
+               Explain Your Core Project
             </h2>
-            {evaluation && (
-              <div className={`badge ${step1Passed ? 'badge-success' : 'badge-warning'}`}>
-                Score: {evaluation.score} / 5
-              </div>
-            )}
-          </div>
 
-          <label className="label" style={{ marginBottom: 12 }}>
-            Describe your project covering: Problem Solved, Solution/Architecture, Business Value, Users, and Your Role.
-          </label>
-          <textarea
-            className="input-field"
-            rows={8}
-            placeholder="I built X to solve Y. The architecture used Z. My role was..."
-            value={explanation}
-            onChange={(e) => {
-              setExplanation(e.target.value);
-              setStep1Passed(false);
-              setEvaluation(null);
-            }}
-            disabled={evalLoading || generating}
-            style={{ marginBottom: 20 }}
-          />
+            <label className="label">Product / Mission</label>
+            <input className="input-field" style={{marginBottom:16}} value={product} onChange={e => setProduct(e.target.value)} placeholder="What was it?" />
 
-          {evaluation && !step1Passed && (
-            <div style={{ background: "rgba(245, 158, 11, 0.1)", border: "1px solid rgba(245, 158, 11, 0.3)", padding: 16, borderRadius: 12, marginBottom: 20 }}>
-              <h4 style={{ color: "var(--warning)", display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-                <AlertCircle size={16} /> Needs Improvement
-              </h4>
-              <p style={{ color: "var(--text-primary)", fontSize: 14, marginBottom: 8, lineHeight: 1.5 }}>
-                {evaluation.feedback}
-              </p>
-              {evaluation.missing_elements && evaluation.missing_elements.length > 0 && (
-                <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
-                  <strong>Missing Elements:</strong>
-                  <ul style={{ paddingLeft: 20, marginTop: 4 }}>
-                    {evaluation.missing_elements.map((el: string, i: number) => <li key={i}>{el}</li>)}
-                  </ul>
-                </div>
-              )}
-            </div>
-          )}
+            <label className="label">Architecture & Tech Stack</label>
+            <textarea className="input-field" rows={3} style={{marginBottom:16}} value={architecture} onChange={e => setArchitecture(e.target.value)} placeholder="How was it built?" />
 
-          {!step1Passed && (
-            <button 
-              className="btn-primary" 
-              onClick={handleEvaluate} 
-              disabled={evalLoading || explanation.trim() === ""}
-              style={{ width: "100%", padding: "12px 0", display: "flex", justifyContent: "center", gap: 8 }}
-            >
-              {evalLoading ? <div className="animate-spin" style={{ width: 16, height: 16, border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "white", borderRadius: "50%" }}></div> : <Sparkles size={16} />}
-              {evalLoading ? "Analyzing..." : "Evaluate Explanation"}
-            </button>
-          )}
-        </div>
+            <label className="label">Business Value</label>
+            <textarea className="input-field" rows={2} style={{marginBottom:16}} value={businessValue} onChange={e => setBusinessValue(e.target.value)} placeholder="Why did it matter?" />
 
-        {/* Step 2: Use Case Level */}
-        {step1Passed && !generatedCaseStudy && (
-          <div className="card animate-fadeIn" style={{ padding: 32, borderColor: "var(--accent)" }}>
-            <h2 style={{ fontSize: 20, marginBottom: 24 }}>Step 2: Deep Dive Use Case</h2>
-            
-            <label className="label" style={{ marginBottom: 12 }}>
-              Give a real use-case scenario. Be specific: What data/corpus was used? Example queries? Step-by-step workflow?
-            </label>
-            <textarea
-              className="input-field"
-              rows={6}
-              placeholder="Example: When a recruiter uploads a technical JD for a React role, the system queries the parsed resumes vector DB..."
-              value={useCaseDetails}
-              onChange={(e) => setUseCaseDetails(e.target.value)}
-              disabled={generating}
-              style={{ marginBottom: 24 }}
-            />
+            <label className="label">Your Role & Ownership</label>
+            <input className="input-field" style={{marginBottom:16}} value={role} onChange={e => setRole(e.target.value)} placeholder="Lead Dev, Data Engineer, etc." />
 
-            <button 
-              className="btn-primary" 
-              onClick={handleGenerate} 
-              disabled={generating || useCaseDetails.trim() === ""}
-              style={{ width: "100%", padding: "12px 0", display: "flex", justifyContent: "center", gap: 8 }}
-            >
-              {generating ? <div className="animate-spin" style={{ width: 16, height: 16, border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "white", borderRadius: "50%" }}></div> : <Sparkles size={16} />}
-              {generating ? "Crafting Case Study..." : "Generate Final Case Study"}
+            <label className="label">Metrics & Impact</label>
+            <input className="input-field" style={{marginBottom:24}} value={impact} onChange={e => setImpact(e.target.value)} placeholder="Reduced latency by 40%..." />
+
+            <button className="btn-primary" onClick={submitProject} disabled={loading} style={{ width: "100%", padding: "12px 0", display: "flex", justifyContent: "center", gap: 8 }}>
+              {loading ? "Analyzing & Generating..." : "Evaluate & Create Case Study"}
             </button>
           </div>
         )}
 
-        {/* Step 3: View Generated Case Study */}
-        {generatedCaseStudy && (
+        {/* Evaluation Output */}
+        {evaluation && step !== "case_study" && (
+          <div style={{ background: "rgba(245, 158, 11, 0.1)", border: "1px solid rgba(245, 158, 11, 0.3)", padding: 16, borderRadius: 12, marginBottom: 20 }}>
+            <h4 style={{ color: "var(--warning)", display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+              <AlertCircle size={16} /> Needs Improvement (Score: {evaluation.overall_score}/10)
+            </h4>
+            <div style={{ color: "var(--text-primary)", fontSize: 14, marginBottom: 8, lineHeight: 1.5 }}>
+              {evaluation.feedback && evaluation.feedback.map((f:any, i:number) => <p key={i}>- {f}</p>)}
+            </div>
+          </div>
+        )}
+
+        {/* Generated output */}
+        {step === "case_study" && generatedCaseStudy && (
             <div className="card animate-fadeIn" style={{ padding: 32, borderColor: "var(--success)" }}>
                <h2 style={{ fontSize: 20, marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
                  <CheckCircle size={20} color="var(--success)" /> Study Guide Generated

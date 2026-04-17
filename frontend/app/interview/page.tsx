@@ -165,9 +165,9 @@ export default function RealisticInterviewPage() {
   const [transcript, setTranscript] = useState<any[]>([]);
   const [stageCounts, setStageCounts] = useState<Record<number, number>>({
     1: 1,   // intro always 1
-    2: 10,  // mock section
-    3: 5,   // hiring manager
-    4: 10,  // technical panel
+    2: 1,  // mock section
+    3: 1,   // hiring manager
+    4: 1,  // technical panel
     5: 1,   // system design
     6: 1,   // coding
   });
@@ -189,6 +189,26 @@ export default function RealisticInterviewPage() {
     el.style.height = "0px";
     el.style.height = `${Math.min(Math.max(el.scrollHeight, 48), 200)}px`;
   }, [answer]);
+
+  // Persist stage counts
+  useEffect(() => {
+    const sid = localStorage.getItem("session_id");
+    if (!sid) return;
+    const stored = localStorage.getItem(`stage_counts_${sid}`);
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        setStageCounts(parsed);
+      } catch (e) {}
+    }
+  }, []);
+
+  useEffect(() => {
+    const sid = localStorage.getItem("session_id");
+    if (sid) {
+      localStorage.setItem(`stage_counts_${sid}`, JSON.stringify(stageCounts));
+    }
+  }, [stageCounts]);
 
   // Timer State
   const [timeLeft, setTimeLeft] = useState(120);
@@ -638,28 +658,22 @@ export default function RealisticInterviewPage() {
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-x-8 sm:gap-y-7">
                 <label className="block text-base font-medium text-on-surface sm:text-lg">Mock section
                   <select className="mt-2 w-full min-h-11 rounded-xl border border-outline-variant/50 bg-surface-container-high px-3.5 py-2.5 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary-container/40" value={stageCounts[2]} onChange={(e) => setStageCounts((p) => ({ ...p, 2: Number(e.target.value) }))}>
-                    <option value={10}>10 questions</option>
-                    <option value={20}>20 questions</option>
-                    <option value={30}>30 questions</option>
+                    {[...Array(20)].map((_, i) => <option key={i} value={i+1}>{i+1} questions</option>)}
                   </select>
                 </label>
                 <label className="block text-base font-medium text-on-surface sm:text-lg">Hiring manager
                   <select className="mt-2 w-full min-h-11 rounded-xl border border-outline-variant/50 bg-surface-container-high px-3.5 py-2.5 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary-container/40" value={stageCounts[3]} onChange={(e) => setStageCounts((p) => ({ ...p, 3: Number(e.target.value) }))}>
-                    <option value={5}>5 questions</option>
-                    <option value={10}>10 questions</option>
+                    {[...Array(20)].map((_, i) => <option key={i} value={i+1}>{i+1} questions</option>)}
                   </select>
                 </label>
                 <label className="block text-base font-medium text-on-surface sm:text-lg">Technical panel
                   <select className="mt-2 w-full min-h-11 rounded-xl border border-outline-variant/50 bg-surface-container-high px-3.5 py-2.5 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary-container/40" value={stageCounts[4]} onChange={(e) => setStageCounts((p) => ({ ...p, 4: Number(e.target.value) }))}>
-                    <option value={10}>10 questions</option>
-                    <option value={20}>20 questions</option>
-                    <option value={30}>30 questions</option>
+                     {[...Array(20)].map((_, i) => <option key={i} value={i+1}>{i+1} questions</option>)}
                   </select>
                 </label>
                 <label className="block text-base font-medium text-on-surface sm:text-lg">System design / coding
                   <select className="mt-2 w-full min-h-11 rounded-xl border border-outline-variant/50 bg-surface-container-high px-3.5 py-2.5 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary-container/40" value={stageCounts[5]} onChange={(e) => setStageCounts((p) => ({ ...p, 5: Number(e.target.value), 6: Number(e.target.value) }))}>
-                    <option value={1}>1 each</option>
-                    <option value={2}>2 each</option>
+                     {[...Array(20)].map((_, i) => <option key={i} value={i+1}>{i+1} each</option>)}
                   </select>
                 </label>
                 </div>

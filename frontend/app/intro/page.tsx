@@ -114,12 +114,12 @@ export default function IntroPage() {
       const data = await evaluateIntro(sessionId, audioBlob);
       const normalized = {
         ...data,
-        score: Math.round((data?.overall_score || 0) * 10),
+        score: data?.score ?? Math.round((data?.evaluation?.overall_score || 0) * 10),
         passed: data?.status === "PASS",
-        scores_breakdown: data?.scores || {},
-        feedback: (data?.suggestions || []).join(" "),
+        scores_breakdown: data?.evaluation?.scores || {},
+        feedback: (data?.evaluation?.feedback || []).join(" ") + " " + (data?.evaluation?.missing_elements || []).join(" "),
         strengths: data?.status === "PASS" ? "Clear overall interview-ready introduction structure." : "",
-        improvements: (data?.suggestions || []).join(" "),
+        improvements: (data?.evaluation?.missing_elements || data?.evaluation?.feedback || []).join(" "),
       };
       setResult(normalized);
       const h = await getIntroHistory(sessionId);
@@ -150,12 +150,12 @@ export default function IntroPage() {
       const data = await evaluateIntroText(sessionId, introText);
       const normalized = {
         ...data,
-        score: Math.round((data?.overall_score || 0) * 10),
+        score: data?.score ?? Math.round((data?.evaluation?.overall_score || 0) * 10),
         passed: data?.status === "PASS",
-        scores_breakdown: data?.scores || {},
-        feedback: (data?.suggestions || []).join(" "),
+        scores_breakdown: data?.evaluation?.scores || {},
+        feedback: (data?.evaluation?.feedback || []).join(" ") + " " + (data?.evaluation?.missing_elements || []).join(" "),
         strengths: data?.status === "PASS" ? "Clear overall interview-ready introduction structure." : "",
-        improvements: (data?.suggestions || []).join(" "),
+        improvements: (data?.evaluation?.missing_elements || data?.evaluation?.feedback || []).join(" "),
       };
       setResult(normalized);
       const h = await getIntroHistory(sessionId);

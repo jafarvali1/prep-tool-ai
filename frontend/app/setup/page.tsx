@@ -14,7 +14,8 @@ export default function SetupPage() {
   const [step, setStep] = useState<Step>("api");
   
   // Requirement: API Keys
-  const [openAiKey, setOpenAiKey] = useState("");
+  const [apiProvider, setApiProvider] = useState("openai");
+  const [apiKey, setApiKey] = useState("");
   const [whisperKey, setWhisperKey] = useState("");
   const [showKey, setShowKey] = useState(false);
   
@@ -44,23 +45,24 @@ export default function SetupPage() {
   }, []);
 
   const handleValidateKeys = async () => {
-    if (!openAiKey.trim() || !whisperKey.trim()) {
+    if (!apiKey.trim() || !whisperKey.trim()) {
       setErrorMsg("Setup incomplete, please fix this"); 
       return; 
     }
     setLoading(true);
     setErrorMsg("");
     try {
-      // Validate the main openai key for generation
-      const data = await validateApiKey(openAiKey.trim(), "openai");
-      // Store both keys or set them appropriately in headers/localStorage based on your custom backend logic
+      // Validate the main api key
+      const data = await validateApiKey(apiKey.trim(), apiProvider);
+      
       setSessionId(data.session_id);
       setCapabilities(data.models_available);
       
       localStorage.setItem("session_id", data.session_id);
-      localStorage.setItem("api_provider", "openai");
+      localStorage.setItem("api_provider", apiProvider);
       localStorage.setItem("whisper_key", whisperKey.trim());
-      localStorage.setItem("openai_key", openAiKey.trim());
+      localStorage.setItem("openai_key", apiKey.trim()); // For backward compatibility with api.ts calls
+      localStorage.setItem(`${apiProvider}_key`, apiKey.trim());
       
       toast.success("Required tools validated! ✓");
       setStep("resume");
@@ -179,14 +181,31 @@ export default function SetupPage() {
 
             <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
               <div>
-                <label className="label">OpenAI Key <span style={{color: "var(--danger)"}}>*</span></label>
+                <label className="label">LLM Provider <span style={{color: "var(--danger)"}}>*</span></label>
+                <div style={{ position: "relative", marginBottom: 16 }}>
+                   <select 
+                     className="input-field" 
+                     value={apiProvider} 
+                     onChange={(e) => setApiProvider(e.target.value)}
+                     style={{ appearance: "none", cursor: "pointer" }}
+                   >
+                     <option value="openai">OpenAI (Recommended)</option>
+                     <option value="anthropic">Anthropic Claude</option>
+                     <option value="gemini">Google Gemini</option>
+                     <option value="groq">Groq</option>
+                   </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="label">{apiProvider === "openai" ? "OpenAI" : apiProvider === "anthropic" ? "Anthropic" : apiProvider === "gemini" ? "Gemini" : "Groq"} Key <span style={{color: "var(--danger)"}}>*</span></label>
                 <div style={{ position: "relative" }}>
                    <input
                      className="input-field"
                      type={showKey ? "text" : "password"}
-                     placeholder="sk-..."
-                     value={openAiKey}
-                     onChange={(e) => setOpenAiKey(e.target.value)}
+                     placeholder={apiProvider === "openai" ? "sk-..." : "api-key..."}
+                     value={apiKey}
+                     onChange={(e) => setApiKey(e.target.value)}
                      style={{ paddingRight: 48 }}
                    />
                 </div>
@@ -274,7 +293,14 @@ export default function SetupPage() {
                      )}
                      <input id="json-file-input" type="file" accept=".json" style={{ display: "none" }} onChange={(e) => e.target.files?.[0] && setJsonResume(e.target.files[0])} />
                   </div>
-                  {jsonResume && <p style={{ fontSize: 13, color: "var(--success)", fontWeight: "bold" }}>{jsonResume.name} ✅</p>}
+                  {jsonResume && (
+                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 8 }}>
+                        <p style={{ fontSize: 13, color: "var(--success)", fontWeight: "bold" }}>{jsonResume.name} ✅</p>
+                        <button onClick={() => { setJsonResume(null); const el = document.getElementById("json-file-input") as HTMLInputElement; if(el) el.value = ""; }} className="btn-secondary" style={{ padding: "4px 8px", fontSize: 11, background: "rgba(239,68,68,0.1)", color: "var(--danger)", border: "1px solid rgba(239,68,68,0.3)" }}>
+                           Delete & Replace
+                        </button>
+                     </div>
+                  )}
                </div>
 
                {/* PDF Optional */}
@@ -292,7 +318,14 @@ export default function SetupPage() {
                      )}
                      <input id="pdf-file-input" type="file" accept=".pdf,.docx" style={{ display: "none" }} onChange={(e) => e.target.files?.[0] && setPdfResume(e.target.files[0])} />
                   </div>
-                  {pdfResume && <p style={{ fontSize: 13, color: "var(--success)", fontWeight: "bold" }}>{pdfResume.name} ✅</p>}
+                  {pdfResume && (
+                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 8 }}>
+                        <p style={{ fontSize: 13, color: "var(--success)", fontWeight: "bold" }}>{pdfResume.name} ✅</p>
+                        <button onClick={() => { setPdfResume(null); const el = document.getElementById("pdf-file-input") as HTMLInputElement; if(el) el.value = ""; }} className="btn-secondary" style={{ padding: "4px 8px", fontSize: 11, background: "rgba(239,68,68,0.1)", color: "var(--danger)", border: "1px solid rgba(239,68,68,0.3)" }}>
+                           Delete & Replace
+                        </button>
+                     </div>
+                  )}
                </div>
             </div>
 
