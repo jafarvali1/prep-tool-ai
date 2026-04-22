@@ -1,3 +1,4 @@
+// C:\Users\dhira\OneDrive\Desktop\AI prep tool\AI Mock tool, Intro video tool\frontend\app\setup\page.tsx
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
