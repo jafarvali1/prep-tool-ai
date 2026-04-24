@@ -1,3 +1,5 @@
+# backend\main.py
+import threading
 import os
 from time import sleep
 from fastapi import FastAPI
@@ -21,14 +23,16 @@ app = FastAPI(
 def startup():
     # Execute CREATE TABLE IF NOT EXISTS sequences at startup.
     # We retry a few times to account for DB startup latency if running inside docker-compose.
-    for i in range(5):
-        try:
-            init_db()
-            print("DB Connection established and tables initialized.")
-            break
-        except Exception as e:
-            print(f"Database initialization failed on attempt {i+1}:", e)
-            sleep(5)
+    def init():
+        for i in range(5):
+            try:
+                init_db()
+                print("✅ DB Connection established and tables initialized.")
+                break
+            except Exception as e:
+                print(f"❌ Database initialization failed on attempt {i+1}:", e)
+                sleep(5)
+    threading.Thread(target=init).start()
 
 # CORS configuration
 origins = [

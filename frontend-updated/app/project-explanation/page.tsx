@@ -32,7 +32,8 @@ export default function ProjectExplanationPage() {
     setCandidateName(localStorage.getItem("candidate_name") || "");
     const fetchContext = async () => {
       try {
-        const res = await fetch(`http://localhost:8000/api/context/${sid}`);
+        const backendUrl = process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === "production" ? "https://ai-backend-560359652969.us-central1.run.app" : "http://localhost:8000");
+        const res = await fetch(`${backendUrl}/api/context/${sid}`);
         if(res.ok) {
            const data = await res.json();
            if(data.project && data.project.product) {
@@ -63,7 +64,8 @@ export default function ProjectExplanationPage() {
     setEvaluation(null);
     try {
       const apiKey = localStorage.getItem("openai_key") || "";
-      const res = await fetch(`http://localhost:8000/api/project/`, {
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === "production" ? "https://ai-backend-560359652969.us-central1.run.app" : "http://localhost:8000");
+      const res = await fetch(`${backendUrl}/api/project/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_id: sessionId, product, architecture, business_value: businessValue, role, impact, api_key: apiKey })

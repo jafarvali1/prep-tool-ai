@@ -32,9 +32,9 @@ export default function SetupPage() {
   const [backendOk, setBackendOk] = useState<boolean | null>(null);
 
   useEffect(() => {
-    const backendUrl = process.env.NODE_ENV === "production" 
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === "production" 
       ? "https://ai-backend-560359652969.us-central1.run.app" 
-      : "http://localhost:8000";
+      : "http://localhost:8000");
       
     axios.get(`${backendUrl}/health`, { timeout: 4000 })
       .then(() => setBackendOk(true))

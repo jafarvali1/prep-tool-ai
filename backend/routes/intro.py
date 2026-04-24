@@ -229,9 +229,16 @@ async def evaluate_audio_intro(
 
         conn = get_db_connection()
 
-        score = int(eval_result.get("overall_score", 0))
-        if score <= 10:
-            score *= 10
+        raw_score = eval_result.get("overall_score", 0)
+        try:
+            score = float(raw_score)
+        except (ValueError, TypeError):
+            score = 0.0
+
+        if score and score <= 10:
+            db_score = int(score * 10)
+        else:
+            db_score = int(score)
 
         with conn.cursor() as cursor:
             cursor.execute("""
@@ -240,7 +247,7 @@ async def evaluate_audio_intro(
             """, (
                 session_id,
                 "intro",
-                score,
+                db_score,
                 json.dumps(eval_result)
             ))
 

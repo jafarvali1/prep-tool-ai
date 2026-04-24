@@ -140,10 +140,16 @@ Impact: {data.impact}
 
         # 5. Store evaluation
         with conn.cursor() as cursor:
-            score = eval_result.get("overall_score", 0)
+            raw_score = eval_result.get("overall_score", 0)
+            try:
+                score = float(raw_score)
+            except (ValueError, TypeError):
+                score = 0.0
 
             if score and score <= 10:
-                score = int(score * 10)
+                db_score = int(score * 10)
+            else:
+                db_score = int(score)
 
             cursor.execute("""
                 INSERT INTO evaluations (user_id, type, score, passed, feedback, raw_response)
@@ -151,8 +157,8 @@ Impact: {data.impact}
             """, (
                 data.user_id,
                 "project",
-                score,
-                eval_result.get("overall_score", 0) >= 7.0,
+                db_score,
+                score >= 7.0,
                 json.dumps(eval_result.get("feedback", [])),
                 json.dumps(eval_result)
             ))
