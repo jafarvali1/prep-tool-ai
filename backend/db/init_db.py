@@ -263,6 +263,24 @@ def init_db():
         except Exception:
             pass
 
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute("ALTER TABLE project_context ADD COLUMN domain VARCHAR(255)")
+        except Exception:
+            pass
+
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute("ALTER TABLE project_context ADD COLUMN background TEXT")
+        except Exception:
+            pass
+
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute("ALTER TABLE project_context ADD COLUMN skills JSON")
+        except Exception:
+            pass
+
         conn.commit()
         conn.close()
 

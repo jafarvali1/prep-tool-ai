@@ -37,7 +37,17 @@ export default function ProjectExplanationPage() {
     const fetchContext = async () => {
       try {
         setLoading(true);
-        const { extractProject } = await import("@/lib/api");
+        const { extractProject, getCaseStudyHistory } = await import("@/lib/api");
+
+        // Check if case study already generated
+        try {
+          const csHist = await getCaseStudyHistory(sid);
+          if (csHist.case_studies && csHist.case_studies.length > 0) {
+            setGeneratedCaseStudy(csHist.case_studies[0].content);
+            setStep("case_study");
+          }
+        } catch(e) {}
+
         const extracted = await extractProject(sid);
         if (extracted) {
            setDomain(extracted.domain || "");

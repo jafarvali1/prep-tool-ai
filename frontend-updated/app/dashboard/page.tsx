@@ -102,7 +102,7 @@ export default function DashboardPipeline() {
       title: "Self-Introduction Audio Test",
       desc: "Record your professional introduction and get AI feedback on fluency, structure, and confidence.",
       href: "/intro",
-      status: hasPassedIntro ? "completed" : (hasCaseStudy ? "pending" : "locked"),
+      status: hasPassedIntro ? "completed" : (hasSetup ? "pending" : "locked"),
       btnText: hasPassedIntro ? "Retake Intro" : "Record Intro",
     },
     {
@@ -112,7 +112,7 @@ export default function DashboardPipeline() {
       title: "Practice Mock Interviews",
       desc: "Have interactive mock interviews with AI agents who ask questions based on your project context.",
       href: "/interview",
-      status: hasPassedIntro ? "pending" : "locked",
+      status: hasSetup ? "pending" : "locked",
       btnText: "Start Interviews",
     }
   ];

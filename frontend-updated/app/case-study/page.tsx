@@ -87,6 +87,47 @@ export default function CaseStudyPage() {
     }
   };
 
+  const generateAllThreeGuides = async () => {
+    setLoading(true);
+    try {
+        let projectDetails = "";
+        try {
+          const lp = await getLatestProject(sessionId);
+          if (lp && Object.keys(lp).length > 0) {
+            projectDetails = `Product: ${lp.product}\nArchitecture: ${lp.architecture}\nValue: ${lp.business_value}\nRole: ${lp.role}\nImpact: ${lp.impact}`;
+          } else {
+            toast.loading("Extracting project from resume...", { id: "extract" });
+            const ep = await extractProject(sessionId);
+            projectDetails = `Product: ${ep.core_project?.product}\nArchitecture: ${ep.core_project?.architecture}\nValue: ${ep.core_project?.business_value}\nRole: ${ep.core_project?.role}\nImpact: ${ep.core_project?.impact}`;
+            toast.dismiss("extract");
+          }
+        } catch (err) {
+          toast.dismiss("extract");
+          throw new Error("Failed to extract project from resume. Did you upload one?");
+        }
+
+        toast.loading("Generating RAG Guide...", { id: "gen" });
+        await generateCaseStudyFromTemplate(sessionId, projectDetails, "rag");
+        toast.loading("Generating Agentic Guide...", { id: "gen" });
+        await generateCaseStudyFromTemplate(sessionId, projectDetails, "agentic");
+        toast.loading("Generating MLOps Guide...", { id: "gen" });
+        await generateCaseStudyFromTemplate(sessionId, projectDetails, "mlops");
+        
+        toast.success("All 3 guides generated!", { id: "gen" });
+        
+        const h = await getCaseStudyHistory(sessionId);
+        setHistory(h.case_studies || []);
+        if (h.case_studies && h.case_studies.length > 0) {
+           setContent(h.case_studies[0].content);
+           setViewingHistoryId(h.case_studies[0].id);
+        }
+    } catch (e: any) {
+        toast.error(e.message || "Failed to generate all guides.", { id: "gen" });
+    } finally {
+        setLoading(false);
+    }
+  };
+
   const viewHistory = (item: any) => {
     setContent(item.content);
     setViewingHistoryId(item.id);
@@ -174,40 +215,35 @@ export default function CaseStudyPage() {
             </div>
 
             {generationType === "domain" ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                {[
-                  { id: "rag", label: "RAG Study Guide" },
-                  { id: "agentic", label: "Agentic Study Guide" },
-                  { id: "mlops", label: "MLOps Study Guide" }
-                ].map((guide) => (
-                  <button
-                    key={guide.id}
-                    className="btn-secondary"
-                    onClick={() => {
-                      setSelectedTopic(guide.id);
-                      handleGenerate(guide.id);
-                    }}
-                    disabled={loading}
-                    style={{
-                      width: "100%",
-                      padding: "12px",
-                      textAlign: "left",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      fontSize: 14,
-                      background: "var(--bg-tertiary)",
-                      border: "1px solid var(--border)",
-                      borderRadius: 8,
-                      cursor: "pointer",
-                      color: "var(--text-primary)"
-                    }}
-                  >
-                    <span>{guide.label}</span>
-                    <Sparkles size={16} color="var(--accent)" />
-                  </button>
-                ))}
-              </div>
+                <button
+                  className="btn-primary"
+                  onClick={generateAllThreeGuides}
+                  disabled={loading}
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 8,
+                    fontSize: 14,
+                  }}
+                >
+                  {loading
+                    ? <>
+                        <div className="animate-spin" style={{
+                          width: 16,
+                          height: 16,
+                          border: "2px solid var(--bg-tertiary)",
+                          borderTopColor: "white",
+                          borderRadius: "50%"
+                        }}></div>
+                        Generating All 3...
+                      </>
+                    : <>
+                        <Sparkles size={16} /> Generate All 3 Guides (RAG, Agentic, MLOps)
+                      </>
+                  }
+                </button>
             ) : (
               <button
                 id="generate-case-study-btn"
@@ -262,32 +298,74 @@ export default function CaseStudyPage() {
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {history.map((h, i) => (
-                  <button
-                    key={h.id}
-                    onClick={() => viewHistory(h)}
-                    style={{
-                      textAlign: "left",
-                      padding: "10px 12px",
-                      borderRadius: 8,
-                      border: `1px solid ${viewingHistoryId === h.id ? "var(--accent)" : "var(--border)"}`,
-                      background: viewingHistoryId === h.id ? "rgba(79, 70, 229, 0.08)" : "transparent",
-                      cursor: "pointer",
-                      transition: "all 0.2s",
-                      color: viewingHistoryId === h.id ? "var(--accent)" : "var(--text-secondary)",
-                      fontSize: 13,
-                      fontWeight: 500,
-                    }}
-                  >
-                    Case Study #{i + 1}
-                    <div style={{
-                      color: "var(--text-muted)",
-                      fontSize: 11,
-                      marginTop: 4,
-                      fontWeight: 400,
-                    }}>
-                      {new Date(h.created_at).toLocaleDateString()}
-                    </div>
-                  </button>
+                  <div key={h.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <button
+                      onClick={() => viewHistory(h)}
+                      style={{
+                        flex: 1,
+                        textAlign: "left",
+                        padding: "10px 12px",
+                        borderRadius: 8,
+                        border: `1px solid ${viewingHistoryId === h.id ? "var(--accent)" : "var(--border)"}`,
+                        background: viewingHistoryId === h.id ? "rgba(79, 70, 229, 0.08)" : "transparent",
+                        cursor: "pointer",
+                        transition: "all 0.2s",
+                        color: viewingHistoryId === h.id ? "var(--accent)" : "var(--text-secondary)",
+                        fontSize: 13,
+                        fontWeight: 500,
+                      }}
+                    >
+                      {h.topic || `Case Study #${i + 1}`}
+                      <div style={{
+                        color: "var(--text-muted)",
+                        fontSize: 11,
+                        marginTop: 4,
+                        fontWeight: 400,
+                      }}>
+                        {new Date(h.created_at).toLocaleDateString()}
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => {
+                        viewHistory(h);
+                        setTimeout(() => {
+                          const element = document.getElementById("case-study-content");
+                          if (element) {
+                            const opt: any = {
+                              margin:       1,
+                              filename:     `${h.topic || 'Case_Study'}.pdf`,
+                              image:        { type: 'jpeg', quality: 0.98 },
+                              html2canvas:  { scale: 2 },
+                              jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+                            };
+                            toast.promise(
+                              // @ts-ignore
+                              html2pdf().set(opt).from(element).save(),
+                              {
+                                loading: 'Generating PDF...',
+                                success: 'PDF downloaded successfully!',
+                                error: 'Failed to generate PDF.',
+                              }
+                            );
+                          }
+                        }, 200);
+                      }}
+                      title="Download PDF"
+                      style={{
+                        padding: "10px",
+                        borderRadius: 8,
+                        background: "var(--bg-tertiary)",
+                        border: "1px solid var(--border)",
+                        cursor: "pointer",
+                        color: "var(--text-secondary)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Download size={16} />
+                    </button>
+                  </div>
                 ))}
               </div>
             </div>

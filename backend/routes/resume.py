@@ -25,6 +25,28 @@ def extract_project(req: ExtractRequest):
                 raise HTTPException(404, "Resume not found. Please upload a resume in the Setup step.")
             resume_data = res['resume_json']
 
+        # Check if already extracted
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT domain, background, skills, product, architecture, business_value, role, impact FROM project_context WHERE user_id = %s", (req.session_id,))
+            existing = cursor.fetchone()
+            if existing and existing.get("domain") and existing.get("product"):
+                try:
+                    skills_list = json.loads(existing["skills"]) if existing.get("skills") else []
+                except:
+                    skills_list = []
+                return {
+                    "domain": existing["domain"],
+                    "background": existing["background"],
+                    "skills": skills_list,
+                    "core_project": {
+                        "product": existing["product"],
+                        "architecture": existing["architecture"],
+                        "business_value": existing["business_value"],
+                        "role": existing["role"],
+                        "impact": existing["impact"]
+                    }
+                }
+
         api_key = get_user_api_key(req.session_id)
         if not api_key:
             raise HTTPException(401, "API key not found")
@@ -71,10 +93,13 @@ def extract_project(req: ExtractRequest):
         with conn.cursor() as cursor:
             cursor.execute("SELECT id FROM project_context WHERE user_id = %s", (req.session_id,))
             proj = extracted.get("core_project", {})
+            dom = extracted.get("domain", "")
+            bg = extracted.get("background", "")
+            sks = json.dumps(extracted.get("skills", []))
             if cursor.fetchone():
                 cursor.execute("""
                     UPDATE project_context 
-                    SET product=%s, architecture=%s, business_value=%s, role=%s, impact=%s
+                    SET product=%s, architecture=%s, business_value=%s, role=%s, impact=%s, domain=%s, background=%s, skills=%s
                     WHERE user_id=%s
                 """, (
                     proj.get("product", ""),
@@ -82,19 +107,21 @@ def extract_project(req: ExtractRequest):
                     proj.get("business_value", ""),
                     proj.get("role", ""),
                     proj.get("impact", ""),
+                    dom, bg, sks,
                     req.session_id
                 ))
             else:
                 cursor.execute("""
-                    INSERT INTO project_context (user_id, product, architecture, business_value, role, impact)
-                    VALUES (%s, %s, %s, %s, %s, %s)
+                    INSERT INTO project_context (user_id, product, architecture, business_value, role, impact, domain, background, skills)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """, (
                     req.session_id,
                     proj.get("product", ""),
                     proj.get("architecture", ""),
                     proj.get("business_value", ""),
                     proj.get("role", ""),
-                    proj.get("impact", "")
+                    proj.get("impact", ""),
+                    dom, bg, sks
                 ))
         conn.commit()
 
@@ -114,9 +141,14 @@ def get_latest_project(session_id: str):
     try:
         conn = get_db_connection()
         with conn.cursor() as cursor:
-            cursor.execute("SELECT product, architecture, business_value, role, impact FROM project_context WHERE user_id = %s", (session_id,))
+            cursor.execute("SELECT product, architecture, business_value, role, impact, domain, background, skills FROM project_context WHERE user_id = %s", (session_id,))
             res = cursor.fetchone()
             if res:
+                if res.get("skills"):
+                    try:
+                        res["skills"] = json.loads(res["skills"])
+                    except:
+                        pass
                 return res
         return {}
     except Exception as e:

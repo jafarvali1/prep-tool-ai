@@ -227,3 +227,24 @@ async def upload_resume(session_id: str = Form(...), file: UploadFile = File(...
 
     finally:
         conn.close()
+
+@router.get("/summary")
+def get_resume_summary(session_id: str):
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT resume_json FROM resumes WHERE user_id = %s", (session_id,))
+            res = cursor.fetchone()
+            
+            cursor.execute("SELECT name FROM candidates WHERE user_id = %s", (session_id,))
+            cand = cursor.fetchone()
+
+        return {
+            "resume_text": res["resume_json"] if res else None,
+            "candidate_name": cand["name"] if cand else None
+        }
+    except Exception as e:
+        print("ERROR get summary:", str(e))
+        raise HTTPException(500, "Failed to get summary")
+    finally:
+        conn.close()

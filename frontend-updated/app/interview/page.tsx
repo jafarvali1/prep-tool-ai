@@ -462,18 +462,13 @@ export default function RealisticInterviewPage() {
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = "en-US";
+    let baseAnswer = answer;
     recognition.onresult = (event: any) => {
-      let chunk = "";
-      for (let i = event.resultIndex; i < event.results.length; ++i) {
-        chunk += event.results[i][0].transcript;
+      let currentTranscript = "";
+      for (let i = 0; i < event.results.length; ++i) {
+        currentTranscript += event.results[i][0].transcript;
       }
-      if (event.results[event.results.length - 1].isFinal) {
-        setAnswer((prev) => {
-          const t = prev.trim();
-          const sp = t.length > 0 && !t.endsWith(" ") ? " " : "";
-          return t + sp + chunk.trim();
-        });
-      }
+      setAnswer(baseAnswer + (baseAnswer && currentTranscript ? " " : "") + currentTranscript);
     };
     recognition.onerror = () => {
       setIsRecordingAnswer(false);
