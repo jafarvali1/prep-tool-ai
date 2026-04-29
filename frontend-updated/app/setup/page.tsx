@@ -34,7 +34,7 @@ export default function SetupPage() {
   useEffect(() => {
     const backendUrl = process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === "production" 
       ? "https://ai-backend-560359652969.us-central1.run.app" 
-      : "http://localhost:8000");
+      : "https://ai-backend-560359652969.us-central1.run.app");
       
     axios.get(`${backendUrl}/health`, { timeout: 4000 })
       .then(() => setBackendOk(true))
@@ -59,6 +59,7 @@ export default function SetupPage() {
       localStorage.setItem("whisper_key", whisperKey.trim());
       localStorage.setItem("openai_key", apiKey.trim());
       localStorage.setItem(`${apiProvider}_key`, apiKey.trim());
+      localStorage.setItem("login_source", "standalone");
       
       toast.success("API keys verified successfully!");
       setStep("resume");

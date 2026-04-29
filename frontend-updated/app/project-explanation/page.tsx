@@ -62,7 +62,8 @@ export default function ProjectExplanationPage() {
            }
         }
       } catch(e: any) {
-        toast.error("Failed to extract data from resume. Make sure you uploaded one.");
+        const errorMsg = e?.response?.data?.detail || e?.message || "Failed to extract data from resume. Make sure you uploaded one.";
+        toast.error(errorMsg);
       } finally {
         setLoading(false);
       }
@@ -85,7 +86,7 @@ export default function ProjectExplanationPage() {
     setEvaluation(null);
     try {
       const apiKey = localStorage.getItem("openai_key") || "";
-      const backendUrl = process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === "production" ? "https://ai-backend-560359652969.us-central1.run.app" : "http://localhost:8000");
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === "production" ? "https://ai-backend-560359652969.us-central1.run.app" : "http://127.0.0.1:8001");
       const res = await fetch(`${backendUrl}/api/project/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -102,7 +103,15 @@ export default function ProjectExplanationPage() {
           skills
         })
       });
-      if(!res.ok) throw new Error("Evaluation failed");
+      if(!res.ok) {
+        let errDetail = "Evaluation failed";
+        try {
+          const errData = await res.json();
+          if(errData && errData.detail) errDetail = errData.detail;
+        } catch(parrErr) {}
+        throw new Error(errDetail);
+      }
+      
       const data = await res.json();
       
       setEvaluation(data.evaluation);
@@ -116,7 +125,8 @@ export default function ProjectExplanationPage() {
         setStep("evaluate");
       }
     } catch (error: any) {
-      toast.error("Process failed. Please try again.");
+      const errorMsg = error?.message || "Process failed. Please try again.";
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }
