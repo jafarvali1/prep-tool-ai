@@ -207,7 +207,7 @@ async def sync_from_wbl(payload: dict):
         raise HTTPException(400, "Token required")
     
     # In production, this should be the internal service URL or external IP
-    wbl_url = os.getenv("WBL_BACKEND_URL", "https://whitebox-learning.com")
+    wbl_url = os.getenv("WBL_BACKEND_URL", "https://fastapi-backend-560359652969.us-central1.run.app")
     try:
         response = requests.get(f"{wbl_url}/api/candidate/sync-data?token={token}", timeout=10)
         if response.status_code != 200:
