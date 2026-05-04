@@ -9,7 +9,7 @@ import toast from "react-hot-toast";
 import Webcam from "react-webcam";
 import { 
   Send, Video, CameraOff, Camera, Play, Settings, Download, Loader2, ArrowLeft, Lightbulb, Volume2, VolumeX,
-  Sparkles, MessageSquare, Mic, MicOff, UserRound, Headphones, PenSquare, Code2, Copy
+  Sparkles, MessageSquare, Mic, MicOff, UserRound, Headphones, PenSquare, Code2, Copy, RotateCcw, ArrowRight
 } from "lucide-react";
 import { sendQuickChat, getStageQuestions, saveProjectBrief, getResumeSummary, getResumeAnalytics } from "@/lib/api";
 import { motion, AnimatePresence } from "framer-motion";
@@ -509,8 +509,13 @@ export default function RealisticInterviewPage() {
       
       // Push AI reply and Evaluation Metadata
       let replyText = data.reply;
+      let spokenText = "";
+      
       if (unsure && data?.evaluation?.improved_answer) {
         replyText = `I understand you were unsure about this one. An expected answer could be:\n\n${data.evaluation.improved_answer}\n\n${data.reply}`;
+        spokenText = `I understand you were unsure about this one. An expected answer could be: ${data.evaluation.improved_answer}. `;
+      } else {
+        spokenText = data.reply;
       }
 
       const target = stageCounts[currentStage] || 1;
@@ -518,7 +523,13 @@ export default function RealisticInterviewPage() {
       let finalReply = replyText;
 
       if (newCount >= target) {
-        finalReply = `Thank you for completing this answer. I have recorded your response and analyzed your technical gaps below.\n\n✅ Section complete (${newCount}/${target}). Click "Next Stage" when ready.`;
+        if (unsure && data?.evaluation?.improved_answer) {
+          finalReply = `I understand you were unsure about this one. An expected answer could be:\n\n${data.evaluation.improved_answer}\n\nThank you for completing this answer. I have recorded your response and analyzed your technical gaps below.\n\n✅ Section complete (${newCount}/${target}). Click "Next Stage" when ready.`;
+          spokenText = `I understand you were unsure about this one. An expected answer could be: ${data.evaluation.improved_answer}. Thank you for completing this answer. Please proceed to the next stage.`;
+        } else {
+          finalReply = `Thank you for completing this answer. I have recorded your response and analyzed your technical gaps below.\n\n✅ Section complete (${newCount}/${target}). Click "Next Stage" when ready.`;
+          spokenText = `Thank you for completing this answer. Please proceed to the next stage.`;
+        }
         setReadyForNextStage(true);
       } else {
         finalReply = `Question ${newCount + 1}/${target}:\n\n${replyText}`;
@@ -533,7 +544,7 @@ export default function RealisticInterviewPage() {
       setAnsweredInStage(newCount);
       
       if (voiceEnabled && typeof window !== "undefined" && window.speechSynthesis) {
-        const utterance = new SpeechSynthesisUtterance(replyText);
+        const utterance = new SpeechSynthesisUtterance(spokenText);
         const voice = availableVoices.find((v) => v.name === selectedVoiceName);
         if (voice) utterance.voice = voice;
         window.speechSynthesis.speak(utterance);
@@ -788,34 +799,71 @@ export default function RealisticInterviewPage() {
                        color: "var(--text-primary)",
                        fontFamily: "'Outfit', sans-serif",
                        marginBottom: 8
-                     }}>Interview transcript</h2>
+                     }}>Thanks for attending the AI Prep Interview!</h2>
                      <p style={{
                        color: "var(--text-secondary)",
                        fontSize: 14,
                        maxWidth: 600,
                        lineHeight: 1.6,
                        margin: 0
-                     }}>Everything you practiced in this session, ready to save or print.</p>
+                     }}>Have a great day! Below is your complete transcript with evaluation scores and gap analysis. You can save this for your records, or retake the session to improve your performance.</p>
                    </div>
-                   <button type="button" onClick={() => window.print()} style={{
-                     display: "inline-flex",
-                     alignItems: "center",
-                     justifyContent: "center",
-                     gap: 8,
-                     borderRadius: 10,
-                     background: "var(--gradient-accent)",
-                     color: "white",
-                     border: "none",
-                     padding: "12px 20px",
-                     fontSize: 14,
-                     fontWeight: 600,
-                     cursor: "pointer",
-                     transition: "all 0.2s",
-                     boxShadow: "0 4px 12px rgba(79, 70, 229, 0.2)",
-                     width: "100%"
-                   }} onMouseEnter={(e) => e.currentTarget.style.boxShadow = "0 6px 20px rgba(79, 70, 229, 0.3)"} onMouseLeave={(e) => e.currentTarget.style.boxShadow = "0 4px 12px rgba(79, 70, 229, 0.2)"} className="sm:w-auto">
-                       <Download size={18} aria-hidden /> Save as PDF
-                   </button>
+                   <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", justifyContent: "flex-end" }} className="sm:w-auto">
+                       <button type="button" onClick={() => window.print()} style={{
+                         display: "inline-flex",
+                         alignItems: "center",
+                         justifyContent: "center",
+                         gap: 8,
+                         borderRadius: 10,
+                         background: "var(--bg-secondary)",
+                         color: "var(--text-primary)",
+                         border: "1px solid var(--border)",
+                         padding: "12px 20px",
+                         fontSize: 14,
+                         fontWeight: 600,
+                         cursor: "pointer",
+                         transition: "all 0.2s",
+                       }} onMouseEnter={(e) => e.currentTarget.style.background = "var(--bg-tertiary)"} onMouseLeave={(e) => e.currentTarget.style.background = "var(--bg-secondary)"}>
+                           <Download size={18} aria-hidden /> Save as PDF
+                       </button>
+
+                       <button type="button" onClick={() => window.location.reload()} style={{
+                         display: "inline-flex",
+                         alignItems: "center",
+                         justifyContent: "center",
+                         gap: 8,
+                         borderRadius: 10,
+                         background: "var(--bg-secondary)",
+                         color: "var(--text-primary)",
+                         border: "1px solid var(--border)",
+                         padding: "12px 20px",
+                         fontSize: 14,
+                         fontWeight: 600,
+                         cursor: "pointer",
+                         transition: "all 0.2s",
+                       }} onMouseEnter={(e) => e.currentTarget.style.background = "var(--bg-tertiary)"} onMouseLeave={(e) => e.currentTarget.style.background = "var(--bg-secondary)"}>
+                           <RotateCcw size={18} aria-hidden /> Retake Session
+                       </button>
+
+                       <button type="button" onClick={() => router.push("/dashboard")} style={{
+                         display: "inline-flex",
+                         alignItems: "center",
+                         justifyContent: "center",
+                         gap: 8,
+                         borderRadius: 10,
+                         background: "var(--gradient-accent)",
+                         color: "white",
+                         border: "none",
+                         padding: "12px 20px",
+                         fontSize: 14,
+                         fontWeight: 600,
+                         cursor: "pointer",
+                         transition: "all 0.2s",
+                         boxShadow: "0 4px 12px rgba(79, 70, 229, 0.2)",
+                       }} onMouseEnter={(e) => e.currentTarget.style.boxShadow = "0 6px 20px rgba(79, 70, 229, 0.3)"} onMouseLeave={(e) => e.currentTarget.style.boxShadow = "0 4px 12px rgba(79, 70, 229, 0.2)"}>
+                           <ArrowRight size={18} aria-hidden /> Back to Dashboard
+                       </button>
+                   </div>
                </div>
                <div style={{ display: "flex", flexDirection: "column", gap: "24px" }} id="printable-transcript">
                    {transcript.map((t, idx) => (

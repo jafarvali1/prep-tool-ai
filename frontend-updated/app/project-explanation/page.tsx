@@ -26,6 +26,7 @@ export default function ProjectExplanationPage() {
   const [impact, setImpact] = useState("");
 
   const [loading, setLoading] = useState(false);
+  const [isExtracting, setIsExtracting] = useState(true);
   const [evaluation, setEvaluation] = useState<any>(null);
   const [generatedCaseStudy, setGeneratedCaseStudy] = useState<string | null>(null);
 
@@ -43,8 +44,11 @@ export default function ProjectExplanationPage() {
         try {
           const csHist = await getCaseStudyHistory(sid);
           if (csHist.case_studies && csHist.case_studies.length > 0) {
-            setGeneratedCaseStudy(csHist.case_studies[0].content);
-            setStep("case_study");
+            const content = csHist.case_studies[0].content;
+            if (content) {
+              setGeneratedCaseStudy(content);
+              setStep("case_study");
+            }
           }
         } catch(e) {}
 
@@ -66,6 +70,7 @@ export default function ProjectExplanationPage() {
         toast.error(errorMsg);
       } finally {
         setLoading(false);
+        setIsExtracting(false);
       }
     };
     fetchContext();
@@ -171,9 +176,17 @@ export default function ProjectExplanationPage() {
             }}>
                Extracted Candidate Profile
             </h2>
-            <p style={{ color: "var(--text-secondary)", fontSize: 14, marginBottom: 24 }}>
-              The AI automatically extracted your domain, background, skills, and core project from your resume. Review and edit if needed before generating your case study.
-            </p>
+            
+            {isExtracting ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "16px", background: "rgba(79, 70, 229, 0.1)", borderRadius: 8, marginBottom: 24, border: "1px solid rgba(79, 70, 229, 0.2)" }}>
+                 <div className="animate-spin" style={{ width: 20, height: 20, border: "2px solid var(--accent)", borderTopColor: "transparent", borderRadius: "50%" }}></div>
+                 <p style={{ margin: 0, color: "var(--text-primary)", fontWeight: 500, fontSize: 14 }}>Please wait while your data is getting extracted and loaded...</p>
+              </div>
+            ) : (
+              <p style={{ color: "var(--text-secondary)", fontSize: 14, marginBottom: 24 }}>
+                The AI automatically extracted your domain, background, skills, and core project from your resume. Review and edit if needed before generating your case study.
+              </p>
+            )}
 
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <div>
@@ -203,8 +216,11 @@ export default function ProjectExplanationPage() {
                 <label className="label">Skills</label>
                 <input
                   className="input-field"
-                  value={skills.join(", ")}
-                  onChange={e => setSkills(e.target.value.split(",").map(s => s.trim()))}
+                  value={Array.isArray(skills) ? skills.join(", ") : skills || ""}
+                  onChange={e => {
+                    const val = e.target.value;
+                    setSkills(val ? val.split(",").map(s => s.trim()) : []);
+                  }}
                   placeholder="React, Python, AWS..."
                   disabled={loading}
                 />
