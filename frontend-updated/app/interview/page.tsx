@@ -314,6 +314,9 @@ export default function RealisticInterviewPage() {
       } catch {
         /* ignore */
       }
+      if (typeof window !== "undefined" && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
     };
   }, []);
 

@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from services.llm_service import call_llm_with_context
 from services.evaluator import coach_answer
+from services.user_context import get_user_api_key
 
 router = APIRouter(prefix="/api/interview", tags=["interview"])
 
@@ -11,6 +12,9 @@ def get_stage_questions(session_id: str, stage_name: str = "General Mock", api_k
     Adapter for frontend: start the interview loop for a specific stage and return the first question.
     """
     try:
+        if not api_key:
+            api_key = get_user_api_key(session_id)
+        
         q = call_llm_with_context(
             user_id=session_id,
             prompt=f"Generate the very first interview question exclusively for a '{stage_name}' round. \nCRITICAL RULES:\n1. Your question MUST be hyper-specific and uniquely tailored to the candidate's actual projects, stack, and experience provided in the context.\n2. Do NOT ask generic behavioral questions without tying them directly to a specific company or project listed in their data.\n3. Ask exactly one question. Do NOT ask them to introduce themselves.",
@@ -36,6 +40,9 @@ def evaluate_live(data: LiveEvalRequest):
     Adapter for frontend: send answer, get feedback and the next question combined.
     """
     try:
+        if not data.api_key:
+            data.api_key = get_user_api_key(data.session_id)
+            
         # 1. Coach the answer
         eval_prompt = f"Question: {data.current_question}\nAnswer: {data.user_answer}\nIdentify flaws and explain how to improve."
         feedback = call_llm_with_context(

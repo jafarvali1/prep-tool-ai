@@ -560,6 +560,7 @@ def get_intro_history(session_id: str):
             rows = cursor.fetchall()
 
         return {
+            "attempts": rows or [],
             "history": rows or []
         }
 
