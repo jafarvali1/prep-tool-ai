@@ -29,6 +29,22 @@ export default function ProjectExplanationPage() {
   const [isExtracting, setIsExtracting] = useState(true);
   const [evaluation, setEvaluation] = useState<any>(null);
   const [generatedCaseStudy, setGeneratedCaseStudy] = useState<string | null>(null);
+  const [generatingTemplate, setGeneratingTemplate] = useState(false);
+
+  const generateSpecificCaseStudy = async (templateKey: string) => {
+      setGeneratingTemplate(true);
+      try {
+          const { generateCaseStudyFromTemplate } = await import("@/lib/api");
+          const projectDetails = `Product: ${product}\nArchitecture: ${architecture}\nRole: ${role}\nImpact: ${impact}\nBusiness Value: ${businessValue}\nBackground: ${background}\nDomain: ${domain}\nSkills: ${skills.join(", ")}`;
+          const res = await generateCaseStudyFromTemplate(sessionId, projectDetails, templateKey);
+          setGeneratedCaseStudy(res.content);
+          toast.success(`Generated ${templateKey.toUpperCase()} Study Guide`);
+      } catch(e: any) {
+          toast.error("Failed to generate case study.");
+      } finally {
+          setGeneratingTemplate(false);
+      }
+  };
 
   useEffect(() => {
     const sid = localStorage.getItem("session_id");
@@ -91,7 +107,7 @@ export default function ProjectExplanationPage() {
     setEvaluation(null);
     try {
       const apiKey = localStorage.getItem("openai_key") || "";
-      const backendUrl = process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === "production" ? "https://ai-backend-560359652969.us-central1.run.app" : "http://127.0.0.1:8001");
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === "production" ? "https://ai-backend-560359652969.us-central1.run.app" : "http://127.0.0.1:8000");
       const res = await fetch(`${backendUrl}/api/project/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -120,10 +136,10 @@ export default function ProjectExplanationPage() {
       const data = await res.json();
       
       setEvaluation(data.evaluation);
-      setGeneratedCaseStudy(data.case_study);
+      // We no longer set the generic case study here so the user sees the domain buttons.
       
       if (data.evaluation.overall_score >= 7) {
-        toast.success(`Excellent! Score: ${data.evaluation.overall_score}/10`);
+        toast.success(`Excellent! Score: ${data.evaluation.overall_score}/10. Please choose a domain.`);
         setStep("case_study");
       } else {
         toast.error(`Score: ${data.evaluation.overall_score}/10. Please add more details.`);
@@ -348,7 +364,7 @@ export default function ProjectExplanationPage() {
         )}
 
         {/* Generated output */}
-        {step === "case_study" && generatedCaseStudy && (
+        {step === "case_study" && (
             <div className="card animate-fadeIn" style={{
               padding: 32,
               borderColor: "rgba(5, 150, 105, 0.3)",
@@ -364,7 +380,7 @@ export default function ProjectExplanationPage() {
                  color: "var(--text-primary)",
                  fontWeight: 700,
                }}>
-                 <CheckCircle size={20} color="var(--success)" /> Case Study Generated
+                 <CheckCircle size={20} color="var(--success)" /> Project Context Saved
                </h2>
                <p style={{
                  color: "var(--text-secondary)",
@@ -373,21 +389,45 @@ export default function ProjectExplanationPage() {
                  lineHeight: 1.6,
                  fontWeight: 400,
                }}>
-                 Your case study has been created using your project details. Review it below, then proceed to the next step.
+                 Generate a deep, FAANG-level study guide tailored to a specific domain using your background.
                </p>
-               <div style={{
-                 background: "var(--bg-secondary)",
-                 padding: 24,
-                 borderRadius: 12,
-                 border: "1px solid var(--border)",
-                 marginBottom: 24,
-                 maxHeight: 500,
-                 overflowY: "auto",
-               }}>
-                 <div className="prose-dark">
-                    <ReactMarkdown>{generatedCaseStudy}</ReactMarkdown>
-                 </div>
+
+               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 32 }}>
+                  <button onClick={() => generateSpecificCaseStudy("rag")} className="btn-secondary" disabled={generatingTemplate} style={{ padding: "16px", display: "flex", flexDirection: "column", gap: 8, alignItems: "center" }}>
+                    <span style={{ fontSize: 16, fontWeight: 700, color: "var(--accent)" }}>RAG</span>
+                    <span style={{ fontSize: 12, color: "var(--text-secondary)", fontWeight: 400 }}>Retrieval-Augmented Gen</span>
+                  </button>
+                  <button onClick={() => generateSpecificCaseStudy("mlops")} className="btn-secondary" disabled={generatingTemplate} style={{ padding: "16px", display: "flex", flexDirection: "column", gap: 8, alignItems: "center" }}>
+                    <span style={{ fontSize: 16, fontWeight: 700, color: "#fb923c" }}>MLOps</span>
+                    <span style={{ fontSize: 12, color: "var(--text-secondary)", fontWeight: 400 }}>Pipelines & Serving</span>
+                  </button>
+                  <button onClick={() => generateSpecificCaseStudy("agentic")} className="btn-secondary" disabled={generatingTemplate} style={{ padding: "16px", display: "flex", flexDirection: "column", gap: 8, alignItems: "center" }}>
+                    <span style={{ fontSize: 16, fontWeight: 700, color: "#e879f9" }}>Agentic AI</span>
+                    <span style={{ fontSize: 12, color: "var(--text-secondary)", fontWeight: 400 }}>Multi-Agent Orchestration</span>
+                  </button>
                </div>
+
+               {generatingTemplate && (
+                 <div style={{ display: "flex", justifyContent: "center", padding: 24, marginBottom: 24 }}>
+                   <div className="animate-spin" style={{ width: 32, height: 32, border: "3px solid var(--bg-tertiary)", borderTopColor: "var(--accent)", borderRadius: "50%" }}></div>
+                 </div>
+               )}
+
+               {!generatingTemplate && generatedCaseStudy && (
+                 <div style={{
+                   background: "var(--bg-secondary)",
+                   padding: 24,
+                   borderRadius: 12,
+                   border: "1px solid var(--border)",
+                   marginBottom: 24,
+                   maxHeight: 500,
+                   overflowY: "auto",
+                 }}>
+                   <div className="prose-dark">
+                      <ReactMarkdown>{generatedCaseStudy}</ReactMarkdown>
+                   </div>
+                 </div>
+               )}
                
                <button 
                 className="btn-primary" 

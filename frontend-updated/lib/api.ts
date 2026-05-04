@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const isProd = process.env.NODE_ENV === "production";
-let API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://ai-backend-560359652969.us-central1.run.app";
+let API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 
 const api = axios.create({
   baseURL: API_BASE,
@@ -189,9 +189,9 @@ export async function getLatestReport(sessionId: string) {
   return res.data;
 }
 
-export async function getStageQuestions(sessionId: string, stageName: string = "General Mock") {
+export async function getStageQuestions(sessionId: string, stageName: string = "General Mock", previousContext: string = "") {
   const apiKey = typeof window !== "undefined" ? localStorage.getItem("openai_key") || "" : "";
-  const res = await api.get("/api/interview/stage-questions", { params: { session_id: sessionId, api_key: apiKey, stage_name: stageName } });
+  const res = await api.get("/api/interview/stage-questions", { params: { session_id: sessionId, api_key: apiKey, stage_name: stageName, previous_context: previousContext } });
   return res.data;
 }
 
@@ -205,5 +205,15 @@ export async function sendQuickChat(sessionId: string, currentQuestion: string, 
     previous_context: previousContext,
     api_key: apiKey
   });
+  return res.data;
+}
+
+export async function completeInterview(sessionId: string) {
+  const res = await api.post("/api/interview/complete", { session_id: sessionId });
+  return res.data;
+}
+
+export async function getFinalReport(sessionId: string) {
+  const res = await api.get("/api/report", { params: { session_id: sessionId } });
   return res.data;
 }

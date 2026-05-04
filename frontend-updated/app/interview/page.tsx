@@ -11,7 +11,7 @@ import {
   Send, Video, CameraOff, Camera, Play, Settings, Download, Loader2, ArrowLeft, Lightbulb, Volume2, VolumeX,
   Sparkles, MessageSquare, Mic, MicOff, UserRound, Headphones, PenSquare, Code2, Copy, RotateCcw, ArrowRight
 } from "lucide-react";
-import { sendQuickChat, getStageQuestions, saveProjectBrief, getResumeSummary, getResumeAnalytics } from "@/lib/api";
+import { sendQuickChat, getStageQuestions, saveProjectBrief, completeInterview, getResumeSummary, getResumeAnalytics } from "@/lib/api";
 import { motion, AnimatePresence } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import ReactMarkdown from "react-markdown";
@@ -228,6 +228,7 @@ export default function RealisticInterviewPage() {
   const [showBriefModal, setShowBriefModal] = useState(false);
   const [briefPromptText, setBriefPromptText] = useState("");
   const [briefInput, setBriefInput] = useState("");
+  const [singleModuleMode, setSingleModuleMode] = useState<number | null>(null);
   const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [selectedVoiceName, setSelectedVoiceName] = useState("");
   const [voiceEnabled, setVoiceEnabled] = useState(true);
@@ -343,6 +344,7 @@ export default function RealisticInterviewPage() {
 
   const handleStart = async () => {
     setIsGenerating(true);
+    setSingleModuleMode(null);
     try {
       const data = await getStageQuestions(sessionId);
       if (data?.needs_project_brief) {
@@ -369,6 +371,35 @@ export default function RealisticInterviewPage() {
     }
   };
 
+  const startSingleModule = async (stageId: number) => {
+    setIsGenerating(true);
+    setSingleModuleMode(stageId);
+    try {
+      const data = await getStageQuestions(sessionId, STAGES[stageId - 1].name);
+      if (data?.needs_project_brief) {
+        setBriefPromptText(
+          data.briefing_prompt ||
+            "Please share your first project details: problem, stack, your role, and impact."
+        );
+        setShowBriefModal(true);
+        return;
+      }
+      if (data && data.questions && data.questions.length > 0) {
+        setDynamicStageQuestions(data.questions);
+        setCurrentStage(stageId);
+        setAnsweredInStage(0);
+        setReadyForNextStage(false);
+        addBotMessage(data.questions[0]);
+      } else {
+        throw new Error("Empty questions returned");
+      }
+    } catch (e) {
+      toast.error("Failed to generate contextual questions.");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const handleSubmitBriefAndStart = async () => {
     if (!briefInput || briefInput.trim().length < 40) {
       toast.error("Please provide a bit more detail.");
@@ -379,12 +410,15 @@ export default function RealisticInterviewPage() {
       await saveProjectBrief(sessionId, briefInput.trim());
       setShowBriefModal(false);
       setBriefInput("");
-      const refreshed = await getStageQuestions(sessionId);
+      const targetStageId = singleModuleMode !== null ? singleModuleMode : 1;
+      const targetStageName = singleModuleMode !== null ? STAGES[singleModuleMode - 1].name : "General Mock";
+      
+      const refreshed = await getStageQuestions(sessionId, targetStageName);
       if (!refreshed?.questions || refreshed.questions.length === 0) {
         throw new Error("Could not generate questions after project brief.");
       }
       setDynamicStageQuestions(refreshed.questions);
-      setCurrentStage(1);
+      setCurrentStage(targetStageId);
       setAnsweredInStage(0);
       setReadyForNextStage(false);
       addBotMessage(refreshed.questions[0]);
@@ -411,30 +445,35 @@ export default function RealisticInterviewPage() {
   };
 
   const nextStage = async () => {
-    setTranscript(prev => [...prev, { stage: STAGES[currentStage-1].name, chat: [...messages] }]);
-    const next = currentStage + 1;
-    if (next <= 5) {
-      setCurrentStage(next);
-      setMessages([]);
-      setTimeLeft(120);
-      setAnsweredInStage(0);
-      setReadyForNextStage(false);
-      
-      setLoading(true);
-      try {
-        const { getStageQuestions } = await import("@/lib/api");
-        const data = await getStageQuestions(sessionId, STAGES[next - 1].name);
-        if (data && data.questions && data.questions.length > 0) {
-           addBotMessage(data.questions[0]);
-        }
-      } catch (err) {
-        toast.error("Failed to load question for next stage.");
-      } finally {
-        setLoading(false);
-      }
-    } else {
+    const updatedTranscript = [...transcript, { stage: STAGES[currentStage-1].name, chat: [...messages] }];
+    setTranscript(updatedTranscript);
+    
+    if (singleModuleMode !== null || currentStage === 5) {
       setCurrentStage(6);
-      toast.success("Interview Completed!");
+      try { await completeInterview(sessionId); } catch(e) {}
+      toast.success("Interview Module Completed!");
+      return;
+    }
+
+    const next = currentStage + 1;
+    setCurrentStage(next);
+    setMessages([]);
+    setTimeLeft(120);
+    setAnsweredInStage(0);
+    setReadyForNextStage(false);
+    
+    setLoading(true);
+    try {
+      const { getStageQuestions } = await import("@/lib/api");
+      const fullContext = updatedTranscript.map(t => `Stage: ${t.stage}\n` + t.chat.map((m: any) => `${m.sender}: ${m.content}`).join("\n")).join("\n\n");
+      const data = await getStageQuestions(sessionId, STAGES[next - 1].name, fullContext);
+      if (data && data.questions && data.questions.length > 0) {
+         addBotMessage(data.questions[0]);
+      }
+    } catch (err) {
+      toast.error("Failed to load question for next stage.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -504,8 +543,11 @@ export default function RealisticInterviewPage() {
     setLoading(true);
 
     try {
-      const prevContext = messages.map(m => `${m.sender}: ${m.content}`).join("\n");
-      const data = await sendQuickChat(sessionId, lastBotMsg, currentAnswer, STAGES[currentStage-1].name, prevContext);
+      const currentStageContext = messages.map(m => `${m.sender}: ${m.content}`).join("\n");
+      const pastTranscriptContext = transcript.map(t => `Stage: ${t.stage}\n` + t.chat.map((m: any) => `${m.sender}: ${m.content}`).join("\n")).join("\n\n");
+      const fullContext = pastTranscriptContext ? `${pastTranscriptContext}\n\nCurrent Stage (${STAGES[currentStage-1].name}):\n${currentStageContext}` : currentStageContext;
+      
+      const data = await sendQuickChat(sessionId, lastBotMsg, currentAnswer, STAGES[currentStage-1].name, fullContext);
       
       // Push AI reply and Evaluation Metadata
       let replyText = data.reply;
@@ -630,7 +672,7 @@ export default function RealisticInterviewPage() {
             Interview path
           </p>
           <div className="mx-auto flex min-w-[680px] items-center justify-center gap-0 lg:min-w-0 lg:w-full">
-            {STAGES.map((s, idx) => {
+            {(singleModuleMode !== null ? [STAGES[singleModuleMode - 1]] : STAGES).map((s, idx, arr) => {
               const isActive = currentStage === s.id;
               const isPast = currentStage > s.id;
               return (
@@ -665,7 +707,7 @@ export default function RealisticInterviewPage() {
                       {s.name}
                     </span>
                   </div>
-                  {idx < STAGES.length - 1 && (
+                  {idx < arr.length - 1 && (
                     <div style={{
                       margin: "0 4px",
                       height: 1,
@@ -1126,6 +1168,30 @@ export default function RealisticInterviewPage() {
                               <svg style={{ width: 14, height: 14, fill: "currentColor" }} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
                             </div>
                           </div>
+                          
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              startSingleModule(stage.id);
+                            }}
+                            style={{
+                              marginTop: 12,
+                              width: "100%",
+                              padding: "8px",
+                              borderRadius: 8,
+                              border: `1px solid var(--border-accent)`,
+                              background: "rgba(79, 70, 229, 0.1)",
+                              color: "var(--text-primary)",
+                              fontSize: 12,
+                              fontWeight: 600,
+                              cursor: "pointer",
+                              transition: "all 0.2s"
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = "rgba(79, 70, 229, 0.2)"}
+                            onMouseLeave={(e) => e.currentTarget.style.background = "rgba(79, 70, 229, 0.1)"}
+                          >
+                            Start Only This
+                          </button>
                         </div>
                       </motion.div>
                     ))}

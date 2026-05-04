@@ -435,76 +435,19 @@ Impact: {res.get('impact')}
         with open(template_path, "r", encoding="utf-8") as f:
             raw_template = f.read()
 
-        # 🔥 UPDATED SYSTEM PROMPT (NO MARKDOWN, CLEAN FORMAT)
+        # 🔥 UPDATED SYSTEM PROMPT
         system_prompt = """
 You are a senior AI interview coach.
 
-Generate a detailed, structured introduction EXACTLY like a real engineer explains in interviews.
+You have been provided with a REFERENCE TEMPLATE. Your ONLY task is to generate an introduction that EXACTLY matches the structure, tone, and flow of the REFERENCE TEMPLATE. 
 
 FORMAT REQUIREMENTS:
-
-1. Plain text only (NO markdown, NO **, NO symbols)
-2. Use clean paragraphs
-3. Use bullet points with "•" symbol only
-4. Use section headings like:
-   - Current Project
-   - Phase One – System
-   - Phase Two – System
-   - Previous Experience
-
-STRUCTURE:
-
-Start with:
-Hi, I am <name>.
-
-Then:
-- Career journey (short)
-- Current focus
-
-Then:
-
-Current Project
-<Explain clearly>
-
-Then:
-
-Phase One – System
-• Explain ingestion pipeline
-• Explain retrieval system
-• Explain tools used
-• Explain architecture
-• Explain deployment
-• Explain evaluation
-• Explain optimization
-
-Then (if possible):
-
-Phase Two – System
-• Agents
-• Memory
-• Routing
-• Tools
-
-Then:
-
-Previous Experience
-• MLOps
-• Infra
-• Cloud
-• Monitoring
-
-RULES:
-- MUST be detailed (not short)
-- MUST use user's project data
-- MUST expand architecture into explanation
-- DO NOT summarize too much
-- DO NOT use generic lines
-- DO NOT use markdown (** etc)
-- DO NOT hallucinate tools not present in input
-
-Make it 2–3 minute speaking length.
-
-Return clean text.
+1. Plain text only (NO markdown, NO **, NO symbols).
+2. Maintain the exact same section flow as the reference template.
+3. Replace the placeholder or example information in the template with the Candidate's actual data from the USER PROJECT DATA.
+4. The generated intro MUST include the candidate's company name (if available), problem statement, how they solved it, what they did, and the tech stack.
+5. If the user data is missing certain sections present in the template, you may adapt slightly, but keep the template's overall narrative and structure.
+6. FIRST PERSON PERSPECTIVE: You MUST write the entire introduction from the perspective of the candidate using first-person pronouns ("I", "my", "we"). DO NOT say "The candidate...", say "I...".
 """
 
         # 🔥 PROMPT
@@ -516,9 +459,10 @@ REFERENCE TEMPLATE:
 {raw_template}
 
 INSTRUCTIONS:
-- Convert project data into structured explanation
-- Expand architecture into technical story
-- Use template only as guidance, not output
+- STRICTLY adhere to the layout and narrative flow of the REFERENCE TEMPLATE.
+- DO NOT invent a new structure.
+- Just add the user's own data and project details into the respective sections of the template.
+- Ensure the problem statement, solution, and tech stack are clearly articulated based on the USER PROJECT DATA.
 
 Generate the introduction.
 """
