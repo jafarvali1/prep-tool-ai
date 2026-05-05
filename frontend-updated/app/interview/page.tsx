@@ -1170,6 +1170,7 @@ export default function RealisticInterviewPage() {
                           </div>
                           
                           <button
+                            disabled={isGenerating}
                             onClick={(e) => {
                               e.stopPropagation();
                               startSingleModule(stage.id);
@@ -1184,13 +1185,25 @@ export default function RealisticInterviewPage() {
                               color: "var(--text-primary)",
                               fontSize: 12,
                               fontWeight: 600,
-                              cursor: "pointer",
-                              transition: "all 0.2s"
+                              cursor: isGenerating ? "not-allowed" : "pointer",
+                              transition: "all 0.2s",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              gap: 8,
+                              opacity: isGenerating ? 0.6 : 1
                             }}
-                            onMouseEnter={(e) => e.currentTarget.style.background = "rgba(79, 70, 229, 0.2)"}
-                            onMouseLeave={(e) => e.currentTarget.style.background = "rgba(79, 70, 229, 0.1)"}
+                            onMouseEnter={(e) => !isGenerating && (e.currentTarget.style.background = "rgba(79, 70, 229, 0.2)")}
+                            onMouseLeave={(e) => !isGenerating && (e.currentTarget.style.background = "rgba(79, 70, 229, 0.1)")}
                           >
-                            Start Only This
+                            {isGenerating && singleModuleMode === stage.id ? (
+                              <>
+                                <Loader2 size={14} className="animate-spin" />
+                                Loading...
+                              </>
+                            ) : (
+                              "Start Only This"
+                            )}
                           </button>
                         </div>
                       </motion.div>
