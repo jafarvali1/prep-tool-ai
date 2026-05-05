@@ -212,6 +212,7 @@ export default function Navbar({ candidateName, onLogout }: NavbarProps) {
               
               if (loginSource === "sso") {
                 const wblUrl = process.env.NEXT_PUBLIC_WBL_URL || "https://whitebox-learning.com/user_dashboard";
+                // const wblUrl = process.env.NEXT_PUBLIC_WBL_URL || "http://localhost:3000/user_dashboard";
                 // If wblUrl already ends with /user_dashboard, don't append it again
                 window.location.href = wblUrl.endsWith('/user_dashboard') ? wblUrl : `${wblUrl}/user_dashboard`;
               } else {
