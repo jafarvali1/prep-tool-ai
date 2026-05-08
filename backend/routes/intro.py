@@ -30,7 +30,7 @@
 #         conn = get_db_connection()
 #         ideal_intro = "A professional overview covering name, background, and alignment with the requested role."
 #         with conn.cursor() as cursor:
-#             # try to fetch generated template if we added it to resumes or project (simplification here)
+#             # try to fetch generated template if we added it to AIPrepTool_resumes or project (simplification here)
 #             pass
             
 #         eval_result = evaluate_intro(session_id, transcript, ideal_intro, api_key=api_key)
@@ -44,7 +44,7 @@
         
 #         with conn.cursor() as cursor:
 #             cursor.execute("""
-#                 INSERT INTO evaluations (user_id, type, score, passed, feedback, raw_response)
+#                 INSERT INTO AIPrepTool_evaluations (user_id, type, score, passed, feedback, raw_response)
 #                 VALUES (%s, %s, %s, %s, %s, %s)
 #             """, (
 #                 session_id, 
@@ -56,12 +56,12 @@
 #             ))
             
 #             # Upsert attempt
-#             cursor.execute("SELECT attempt_count FROM attempts WHERE user_id = %s AND attempt_type = 'intro'", (session_id,))
+#             cursor.execute("SELECT attempt_count FROM AIPrepTool_attempts WHERE user_id = %s AND attempt_type = 'intro'", (session_id,))
 #             attn = cursor.fetchone()
 #             if attn:
-#                 cursor.execute("UPDATE attempts SET attempt_count = attempt_count + 1 WHERE user_id = %s AND attempt_type = 'intro'", (session_id,))
+#                 cursor.execute("UPDATE AIPrepTool_attempts SET attempt_count = attempt_count + 1 WHERE user_id = %s AND attempt_type = 'intro'", (session_id,))
 #             else:
-#                 cursor.execute("INSERT INTO attempts (user_id, attempt_type, attempt_count) VALUES (%s, %s, %s)", (session_id, 'intro', 1))
+#                 cursor.execute("INSERT INTO AIPrepTool_attempts (user_id, attempt_type, attempt_count) VALUES (%s, %s, %s)", (session_id, 'intro', 1))
 
 #             conn.commit()
         
@@ -108,7 +108,7 @@
         
 #         with conn.cursor() as cursor:
 #             cursor.execute("""
-#                 INSERT INTO evaluations (user_id, type, score, passed, feedback, raw_response)
+#                 INSERT INTO AIPrepTool_evaluations (user_id, type, score, passed, feedback, raw_response)
 #                 VALUES (%s, %s, %s, %s, %s, %s)
 #             """, (
 #                 data.session_id, 
@@ -120,12 +120,12 @@
 #             ))
             
 #             # Upsert attempt
-#             cursor.execute("SELECT attempt_count FROM attempts WHERE user_id = %s AND attempt_type = 'intro'", (data.session_id,))
+#             cursor.execute("SELECT attempt_count FROM AIPrepTool_attempts WHERE user_id = %s AND attempt_type = 'intro'", (data.session_id,))
 #             attn = cursor.fetchone()
 #             if attn:
-#                 cursor.execute("UPDATE attempts SET attempt_count = attempt_count + 1 WHERE user_id = %s AND attempt_type = 'intro'", (data.session_id,))
+#                 cursor.execute("UPDATE AIPrepTool_attempts SET attempt_count = attempt_count + 1 WHERE user_id = %s AND attempt_type = 'intro'", (data.session_id,))
 #             else:
-#                 cursor.execute("INSERT INTO attempts (user_id, attempt_type, attempt_count) VALUES (%s, %s, %s)", (data.session_id, 'intro', 1))
+#                 cursor.execute("INSERT INTO AIPrepTool_attempts (user_id, attempt_type, attempt_count) VALUES (%s, %s, %s)", (data.session_id, 'intro', 1))
 
 #             conn.commit()
             
@@ -152,10 +152,10 @@
 #     try:
 #         conn = get_db_connection()
 #         with conn.cursor() as cursor:
-#             cursor.execute("SELECT score FROM evaluations WHERE user_id = %s AND type = 'intro' ORDER BY id DESC", (session_id,))
+#             cursor.execute("SELECT score FROM AIPrepTool_evaluations WHERE user_id = %s AND type = 'intro' ORDER BY id DESC", (session_id,))
 #             res = cursor.fetchall()
-#             attempts = [{"score": row['score']} for row in res]
-#             return {"attempts": attempts}
+#             AIPrepTool_attempts = [{"score": row['score']} for row in res]
+#             return {"AIPrepTool_attempts": AIPrepTool_attempts}
 #     except Exception as e:
 #         raise HTTPException(status_code=500, detail=str(e))
 #     finally:
@@ -253,7 +253,7 @@ async def evaluate_audio_intro(
 
         with conn.cursor() as cursor:
             cursor.execute("""
-                INSERT INTO evaluations (user_id, type, score, feedback)
+                INSERT INTO AIPrepTool_evaluations (user_id, type, score, feedback)
                 VALUES (%s, %s, %s, %s)
             """, (
                 session_id,
@@ -315,7 +315,7 @@ def evaluate_text_intro(data: dict):
         try:
             with conn.cursor() as cursor:
                 cursor.execute("""
-                    INSERT INTO evaluations (user_id, type, score, feedback)
+                    INSERT INTO AIPrepTool_evaluations (user_id, type, score, feedback)
                     VALUES (%s, %s, %s, %s)
                 """, (
                     session_id,
@@ -349,17 +349,17 @@ def evaluate_text_intro(data: dict):
 
 #         # Get project context (optional personalization)
 #         conn = get_db_connection()
-#         project_context = ""
+#         AIPrepTool_project_context = ""
 
 #         try:
 #             with conn.cursor() as cursor:
 #                 cursor.execute(
-#                     "SELECT product, role FROM project_context WHERE user_id = %s",
+#                     "SELECT product, role FROM AIPrepTool_project_context WHERE user_id = %s",
 #                     (session_id,)
 #                 )
 #                 res = cursor.fetchone()
 #                 if res:
-#                     project_context = f"Product: {res.get('product')}, Role: {res.get('role')}"
+#                     AIPrepTool_project_context = f"Product: {res.get('product')}, Role: {res.get('role')}"
 #         finally:
 #             conn.close()
 
@@ -376,7 +376,7 @@ def evaluate_text_intro(data: dict):
 # Create a personalized introduction.
 
 # Context:
-# {project_context}
+# {AIPrepTool_project_context}
 # """
 
 #         response = call_llm_with_context(
@@ -409,7 +409,7 @@ def get_dynamic_intro_template(session_id: str):
             with conn.cursor() as cursor:
                 cursor.execute("""
                     SELECT product, architecture, business_value, role, impact
-                    FROM project_context
+                    FROM AIPrepTool_project_context
                     WHERE user_id = %s
                 """, (session_id,))
                 res = cursor.fetchone()
@@ -495,7 +495,7 @@ def get_intro_history(session_id: str):
         with conn.cursor() as cursor:
             cursor.execute("""
                 SELECT id, score, feedback, created_at
-                FROM evaluations
+                FROM AIPrepTool_evaluations
                 WHERE user_id = %s AND type = 'intro'
                 ORDER BY created_at DESC
                 LIMIT 5
@@ -504,7 +504,7 @@ def get_intro_history(session_id: str):
             rows = cursor.fetchall()
 
         return {
-            "attempts": rows or [],
+            "AIPrepTool_attempts": rows or [],
             "history": rows or []
         }
 

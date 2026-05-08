@@ -47,15 +47,17 @@ export default function DashboardPipeline() {
 
         try {
           const csHist = await getCaseStudyHistory(sid);
-          if (csHist.case_studies && csHist.case_studies.length > 0) {
+          const caseStudies = csHist.AIPrepTool_case_studies || csHist.case_studies || [];
+          if (caseStudies.length > 0) {
             setHasCaseStudy(true);
           }
         } catch (e) {}
 
         try {
           const introHist = await getIntroHistory(sid);
-          if (introHist.attempts && introHist.attempts.length > 0) {
-            const passedAny = introHist.attempts.some((a: any) => a.score >= 70);
+          const attempts = introHist.AIPrepTool_attempts || introHist.history || introHist.attempts || [];
+          if (attempts.length > 0) {
+            const passedAny = attempts.some((a: any) => a.score >= 70);
             setHasPassedIntro(passedAny);
           }
         } catch (e) {}

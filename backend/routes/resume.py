@@ -19,7 +19,7 @@ def extract_project(req: ExtractRequest):
     try:
         conn = get_db_connection()
         with conn.cursor() as cursor:
-            cursor.execute("SELECT resume_json FROM resumes WHERE user_id = %s", (req.session_id,))
+            cursor.execute("SELECT resume_json FROM AIPrepTool_resumes WHERE user_id = %s", (req.session_id,))
             res = cursor.fetchone()
             if not res or not res['resume_json']:
                 raise HTTPException(404, "Resume not found. Please upload a resume in the Setup step.")
@@ -27,7 +27,7 @@ def extract_project(req: ExtractRequest):
 
         # Check if already extracted
         with conn.cursor() as cursor:
-            cursor.execute("SELECT domain, background, skills, product, architecture, business_value, role, impact FROM project_context WHERE user_id = %s", (req.session_id,))
+            cursor.execute("SELECT domain, background, skills, product, architecture, business_value, role, impact FROM AIPrepTool_project_context WHERE user_id = %s", (req.session_id,))
             existing = cursor.fetchone()
             if existing and existing.get("domain") and existing.get("product"):
                 try:
@@ -73,7 +73,7 @@ def extract_project(req: ExtractRequest):
         }}
         """
         
-        system_prompt = "You are an expert technical recruiter analyzing resumes."
+        system_prompt = "You are an expert technical recruiter analyzing AIPrepTool_resumes."
         
         res_str = call_llm_with_context(
             user_id=req.session_id,
@@ -89,11 +89,11 @@ def extract_project(req: ExtractRequest):
         if "error" in extracted:
             raise Exception("Failed to extract data: " + extracted.get("error", ""))
             
-        # Store extracted project in project_context so it can be evaluated/generated later
+        # Store extracted project in AIPrepTool_project_context so it can be evaluated/generated later
         with conn.cursor() as cursor:
             proj = extracted.get("core_project", {})
             cursor.execute("""
-                INSERT INTO project_context (user_id, product, architecture, business_value, role, impact)
+                INSERT INTO AIPrepTool_project_context (user_id, product, architecture, business_value, role, impact)
                 VALUES (%s, %s, %s, %s, %s, %s)
                 ON DUPLICATE KEY UPDATE 
                     product = VALUES(product),
@@ -135,7 +135,13 @@ def get_latest_project(session_id: str):
     try:
         conn = get_db_connection()
         with conn.cursor() as cursor:
-            cursor.execute("SELECT product, architecture, business_value, role, impact, domain, background, skills FROM project_context WHERE user_id = %s", (session_id,))
+            cursor.execute("""
+                SELECT 
+                    company_name, domain, product, business_problem, previous_system,
+                    key_problems, ai_techniques, agent_usage, impact, evaluation_approach,
+                    challenges_learnings, learnings, future_roadmap, background, skills, architecture, role, business_value
+                FROM AIPrepTool_project_context WHERE user_id = %s
+            """, (session_id,))
             res = cursor.fetchone()
             if res:
                 if res.get("skills"):
@@ -144,6 +150,33 @@ def get_latest_project(session_id: str):
                     except:
                         pass
                 return res
+                
+            # Fallback to basic JSON extraction if LLM is still pending
+            cursor.execute("SELECT resume_json FROM AIPrepTool_resumes WHERE user_id = %s", (session_id,))
+            resume_row = cursor.fetchone()
+            if resume_row and resume_row.get("resume_json"):
+                resume_data = resume_row["resume_json"]
+                if isinstance(resume_data, str):
+                    try: resume_data = json.loads(resume_data)
+                    except: resume_data = {}
+                    
+                basic_res = {"company_name": "", "background": "", "skills": []}
+                
+                exp = resume_data.get("Work Experience") or resume_data.get("experience") or resume_data.get("Experience") or []
+                if exp and isinstance(exp, list) and len(exp) > 0:
+                    basic_res["company_name"] = exp[0].get("company", "") or exp[0].get("company_name", "") or exp[0].get("name", "")
+                    
+                skills = resume_data.get("Skills") or resume_data.get("skills")
+                if isinstance(skills, list):
+                    basic_res["skills"] = skills
+                elif isinstance(skills, dict):
+                    for v in skills.values():
+                        if isinstance(v, list): basic_res["skills"].extend(v)
+                elif isinstance(skills, str):
+                    basic_res["skills"] = [s.strip() for s in skills.split(",")]
+                    
+                return basic_res
+                
         return {}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

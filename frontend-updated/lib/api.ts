@@ -104,6 +104,11 @@ export async function getIntroHistory(sessionId: string) {
 }
 
 // ─── Project Extraction ───────────────────────────────────────
+export async function getExtractionStatus(sessionId: string) {
+  const res = await api.get("/api/setup/extraction-status", { params: { session_id: sessionId } });
+  return res.data;
+}
+
 export async function extractProject(sessionId: string) {
   const res = await api.post("/api/resume/extract-project", { session_id: sessionId });
   return res.data;

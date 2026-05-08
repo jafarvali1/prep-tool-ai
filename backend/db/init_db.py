@@ -28,9 +28,9 @@
 #     try:
 #         conn = get_db_connection()
 #         with conn.cursor() as cursor:
-#             # 1. candidates
+#             # 1. AIPrepTool_candidates
 #             cursor.execute("""
-#                 CREATE TABLE IF NOT EXISTS candidates (
+#                 CREATE TABLE IF NOT EXISTS AIPrepTool_candidates (
 #                     id INT AUTO_INCREMENT PRIMARY KEY,
 #                     user_id VARCHAR(255) UNIQUE NOT NULL,
 #                     name VARCHAR(255),
@@ -40,9 +40,9 @@
 #                 )
 #             """)
             
-#             # 2. resumes
+#             # 2. AIPrepTool_resumes
 #             cursor.execute("""
-#                 CREATE TABLE IF NOT EXISTS resumes (
+#                 CREATE TABLE IF NOT EXISTS AIPrepTool_resumes (
 #                     id INT AUTO_INCREMENT PRIMARY KEY,
 #                     user_id VARCHAR(255) UNIQUE NOT NULL,
 #                     resume_json JSON,
@@ -51,9 +51,9 @@
 #                 )
 #             """)
 
-#             # 3. project_context
+#             # 3. AIPrepTool_project_context
 #             cursor.execute("""
-#                 CREATE TABLE IF NOT EXISTS project_context (
+#                 CREATE TABLE IF NOT EXISTS AIPrepTool_project_context (
 #                     id INT AUTO_INCREMENT PRIMARY KEY,
 #                     user_id VARCHAR(255) UNIQUE NOT NULL,
 #                     product TEXT,
@@ -66,9 +66,9 @@
 #                 )
 #             """)
 
-#             # 4. evaluations
+#             # 4. AIPrepTool_evaluations
 #             cursor.execute("""
-#                 CREATE TABLE IF NOT EXISTS evaluations (
+#                 CREATE TABLE IF NOT EXISTS AIPrepTool_evaluations (
 #                     id INT AUTO_INCREMENT PRIMARY KEY,
 #                     user_id VARCHAR(255) NOT NULL,
 #                     type VARCHAR(50),
@@ -80,9 +80,9 @@
 #                 )
 #             """)
 
-#             # 5. attempts
+#             # 5. AIPrepTool_attempts
 #             cursor.execute("""
-#                 CREATE TABLE IF NOT EXISTS attempts (
+#                 CREATE TABLE IF NOT EXISTS AIPrepTool_attempts (
 #                     id INT AUTO_INCREMENT PRIMARY KEY,
 #                     user_id VARCHAR(255) NOT NULL,
 #                     attempt_type VARCHAR(50),
@@ -94,8 +94,8 @@
             
 #         try:
 #             with conn.cursor() as cursor:
-#                 cursor.execute("ALTER TABLE project_context MODIFY COLUMN product TEXT")
-#                 cursor.execute("ALTER TABLE project_context MODIFY COLUMN role TEXT")
+#                 cursor.execute("ALTER TABLE AIPrepTool_project_context MODIFY COLUMN product TEXT")
+#                 cursor.execute("ALTER TABLE AIPrepTool_project_context MODIFY COLUMN role TEXT")
 #         except Exception:
 #             pass # Ignore if it fails or table doesn't exist etc.
 
@@ -150,7 +150,7 @@ def init_db():
             # 1. CANDIDATES (UPDATED)
             # ---------------------------
             cursor.execute("""
-                CREATE TABLE IF NOT EXISTS candidates (
+                CREATE TABLE IF NOT EXISTS AIPrepTool_candidates (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     user_id VARCHAR(255) UNIQUE NOT NULL,
                     name VARCHAR(255),
@@ -160,6 +160,7 @@ def init_db():
                     api_key_encrypted TEXT,
                     login_count INT DEFAULT 1,
                     last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    extraction_status VARCHAR(50) DEFAULT 'pending',
 
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
@@ -171,7 +172,7 @@ def init_db():
             # 2. RESUMES
             # ---------------------------
             cursor.execute("""
-                CREATE TABLE IF NOT EXISTS resumes (
+                CREATE TABLE IF NOT EXISTS AIPrepTool_resumes (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     user_id VARCHAR(255) UNIQUE NOT NULL,
                     resume_json JSON,
@@ -187,7 +188,7 @@ def init_db():
             # 3. PROJECT CONTEXT
             # ---------------------------
             cursor.execute("""
-                CREATE TABLE IF NOT EXISTS project_context (
+                CREATE TABLE IF NOT EXISTS AIPrepTool_project_context (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     user_id VARCHAR(255) UNIQUE NOT NULL,
                     product TEXT,
@@ -195,6 +196,23 @@ def init_db():
                     business_value TEXT,
                     role TEXT,
                     impact TEXT,
+                    business_problem TEXT,
+                    previous_system TEXT,
+                    key_objectives TEXT,
+                    users_scale TEXT,
+                    agents_components TEXT,
+                    key_workflows TEXT,
+                    tools_integrations TEXT,
+                    tech_stack TEXT,
+                    ai_techniques TEXT,
+                    evaluation_approach TEXT,
+                    challenges_learnings TEXT,
+                    safety_guardrails TEXT,
+                    future_roadmap TEXT,
+                    company_name TEXT,
+                    key_problems TEXT,
+                    agent_usage VARCHAR(50),
+                    learnings TEXT,
 
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -207,7 +225,7 @@ def init_db():
             # 4. EVALUATIONS
             # ---------------------------
             cursor.execute("""
-                CREATE TABLE IF NOT EXISTS evaluations (
+                CREATE TABLE IF NOT EXISTS AIPrepTool_evaluations (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     user_id VARCHAR(255) NOT NULL,
                     type VARCHAR(50),
@@ -228,7 +246,7 @@ def init_db():
             # 5. ATTEMPTS (UPSERT FRIENDLY)
             # ---------------------------
             cursor.execute("""
-                CREATE TABLE IF NOT EXISTS attempts (
+                CREATE TABLE IF NOT EXISTS AIPrepTool_attempts (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     user_id VARCHAR(255) NOT NULL,
                     attempt_type VARCHAR(50),
@@ -240,6 +258,19 @@ def init_db():
                     INDEX idx_attempt_user (user_id)
                 )
             """)
+            # ---------------------------
+            # 6. CASE STUDIES
+            # ---------------------------
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS AIPrepTool_case_studies (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    user_id VARCHAR(255) NOT NULL,
+                    content TEXT,
+                    topic VARCHAR(255),
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    INDEX idx_case_study_user (user_id)
+                )
+            """)
 
         # ---------------------------
         # SAFE ALTERS (for existing DBs)
@@ -247,37 +278,64 @@ def init_db():
         try:
             with conn.cursor() as cursor:
                 # Add new columns if missing
-                cursor.execute("ALTER TABLE candidates ADD COLUMN api_key_encrypted TEXT")
+                cursor.execute("ALTER TABLE AIPrepTool_candidates ADD COLUMN api_key_encrypted TEXT")
         except Exception:
             pass
 
         try:
             with conn.cursor() as cursor:
-                cursor.execute("ALTER TABLE candidates ADD COLUMN login_count INT DEFAULT 1")
+                cursor.execute("ALTER TABLE AIPrepTool_candidates ADD COLUMN extraction_status VARCHAR(50) DEFAULT 'pending'")
         except Exception:
             pass
 
         try:
             with conn.cursor() as cursor:
-                cursor.execute("ALTER TABLE candidates ADD COLUMN last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
+                cursor.execute("ALTER TABLE AIPrepTool_candidates ADD COLUMN login_count INT DEFAULT 1")
         except Exception:
             pass
 
         try:
             with conn.cursor() as cursor:
-                cursor.execute("ALTER TABLE project_context ADD COLUMN domain VARCHAR(255)")
+                cursor.execute("ALTER TABLE AIPrepTool_candidates ADD COLUMN last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
         except Exception:
             pass
 
         try:
             with conn.cursor() as cursor:
-                cursor.execute("ALTER TABLE project_context ADD COLUMN background TEXT")
+                cursor.execute("ALTER TABLE AIPrepTool_project_context ADD COLUMN domain VARCHAR(255)")
         except Exception:
             pass
 
         try:
             with conn.cursor() as cursor:
-                cursor.execute("ALTER TABLE project_context ADD COLUMN skills JSON")
+                cursor.execute("ALTER TABLE AIPrepTool_project_context ADD COLUMN background TEXT")
+        except Exception:
+            pass
+
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute("ALTER TABLE AIPrepTool_project_context ADD COLUMN skills JSON")
+        except Exception:
+            pass
+
+        # Safe alters for 13 new project context fields
+        new_columns = [
+            "business_problem", "previous_system", "key_objectives", "users_scale",
+            "agents_components", "key_workflows", "tools_integrations", "tech_stack",
+            "ai_techniques", "evaluation_approach", "challenges_learnings", 
+            "safety_guardrails", "future_roadmap", "company_name", "key_problems",
+            "learnings"
+        ]
+        for col in new_columns:
+            try:
+                with conn.cursor() as cursor:
+                    cursor.execute(f"ALTER TABLE AIPrepTool_project_context ADD COLUMN {col} TEXT")
+            except Exception:
+                pass
+
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(f"ALTER TABLE AIPrepTool_project_context ADD COLUMN agent_usage VARCHAR(50)")
         except Exception:
             pass
 
