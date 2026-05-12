@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from db.connection import get_db_connection
+from services.resume_source import fetch_resume_raw
 import json
 
 router = APIRouter(prefix="/api/report", tags=["report"])
@@ -11,9 +12,9 @@ def get_final_report(session_id: str):
     try:
         conn = get_db_connection()
         with conn.cursor() as cursor:
-            # Aggregate setup/resume
-            cursor.execute("SELECT resume_json FROM aiprep_tool_resumes WHERE user_id = %s", (session_id,))
-            resume = cursor.fetchone()
+            # Aggregate setup/resume (WBL or legacy)
+            resume_raw = fetch_resume_raw(session_id)
+            resume = {"resume_json": resume_raw} if resume_raw else None
 
             # Aggregate project
             cursor.execute("SELECT domain, background, skills, product, architecture, role, impact FROM aiprep_tool_project_context WHERE user_id = %s", (session_id,))

@@ -1,5 +1,6 @@
 import json
 from db.connection import get_db_connection
+from services.resume_source import fetch_resume_dict
 
 def get_candidate_context(user_id: str):
     """
@@ -15,14 +16,10 @@ def get_candidate_context(user_id: str):
     try:
         conn = get_db_connection()
         with conn.cursor() as cursor:
-            # 1. Fetch Resume
-            cursor.execute("SELECT resume_json FROM aiprep_tool_resumes WHERE user_id = %s", (user_id,))
-            res = cursor.fetchone()
-            if res and res.get('resume_json'):
-                try:
-                    context["resume"] = json.loads(res['resume_json']) if isinstance(res['resume_json'], str) else res['resume_json']
-                except:
-                    pass
+            # 1. Fetch Resume (WBL candidate_marketing or legacy aiprep_tool_resumes)
+            resume_obj = fetch_resume_dict(user_id)
+            if resume_obj:
+                context["resume"] = resume_obj
 
             # 2. Fetch Project Context
             cursor.execute("SELECT product, architecture, business_value, role, impact FROM aiprep_tool_project_context WHERE user_id = %s", (user_id,))

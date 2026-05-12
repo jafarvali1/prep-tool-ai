@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from db.connection import get_db_connection
 from services.llm_service import call_llm_with_context
 from services.user_context import get_user_api_key
+from services.resume_source import fetch_resume_raw
 
 router = APIRouter(prefix="/api/resume", tags=["resume"])
 
@@ -18,12 +19,10 @@ def extract_project(req: ExtractRequest):
     conn = None
     try:
         conn = get_db_connection()
-        with conn.cursor() as cursor:
-            cursor.execute("SELECT resume_json FROM aiprep_tool_resumes WHERE user_id = %s", (req.session_id,))
-            res = cursor.fetchone()
-            if not res or not res['resume_json']:
-                raise HTTPException(404, "Resume not found. Please upload a resume in the Setup step.")
-            resume_data = res['resume_json']
+        raw = fetch_resume_raw(req.session_id)
+        if not raw:
+            raise HTTPException(404, "Resume not found. Please upload a resume in the Setup step.")
+        resume_data = raw
 
         # Check if already extracted
         with conn.cursor() as cursor:
@@ -152,10 +151,8 @@ def get_latest_project(session_id: str):
                 return res
                 
             # Fallback to basic JSON extraction if LLM is still pending
-            cursor.execute("SELECT resume_json FROM aiprep_tool_resumes WHERE user_id = %s", (session_id,))
-            resume_row = cursor.fetchone()
-            if resume_row and resume_row.get("resume_json"):
-                resume_data = resume_row["resume_json"]
+            resume_data = fetch_resume_raw(session_id)
+            if resume_data:
                 if isinstance(resume_data, str):
                     try: resume_data = json.loads(resume_data)
                     except: resume_data = {}
