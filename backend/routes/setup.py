@@ -1,132 +1,3 @@
-# # backend\routes\setup.py
-# import json
-# from fastapi import APIRouter, HTTPException
-# from pydantic import BaseModel
-# from typing import Optional
-# from db.connection import get_db_connection
-# from fastapi import UploadFile, File, Form
-
-# import uuid
-# from openai import OpenAI
-
-# router = APIRouter(prefix="/api/setup", tags=["setup"])
-
-# class ValidationRequest(BaseModel):
-#     api_key: str
-#     api_provider: str
-
-# @router.post("/validate")
-# def validate_key(req: ValidationRequest):
-#     """
-#     Validates OpenAI key and returns a dummy session_id for legacy frontend code compatibility
-#     """
-#     try:
-#         # Simple client validation
-#         client = OpenAI(api_key=req.api_key)
-#         # We can just list models to verify it works
-#         client.models.list()
-        
-#         return {
-#             "session_id": str(uuid.uuid4()),
-#             "models_available": ["gpt-4o-mini", "gpt-4o"]
-#         }
-#     except Exception as e:
-#         raise HTTPException(status_code=400, detail="Invalid API Key or Provider")
-
-# class CandidateSetup(BaseModel):
-#     user_id: str
-#     name: str
-
-# @router.post("/")
-# def init_candidate(data: CandidateSetup):
-#     """
-#     Ensure the candidate exists in DB. Create if not.
-#     """
-#     conn = None
-#     try:
-#         conn = get_db_connection()
-#         with conn.cursor() as cursor:
-#             # UPSERT basically using ON DUPLICATE KEY UPDATE but we just INSERT ignore or catch
-#             cursor.execute("SELECT id FROM AIPrepTool_candidates WHERE user_id = %s", (data.user_id,))
-#             if cursor.fetchone():
-#                 cursor.execute("UPDATE AIPrepTool_candidates SET name = %s WHERE user_id = %s", (data.name, data.user_id))
-#             else:
-#                 cursor.execute("INSERT INTO AIPrepTool_candidates (user_id, name) VALUES (%s, %s)", (data.user_id, data.name))
-#         conn.commit()
-#         return {"message": "Candidate setup successful"}
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=str(e))
-#     finally:
-#         if conn:
-#             conn.close()
-
-# @router.post("/resume")
-# async def upload_resume(session_id: str = Form(...), file: UploadFile = File(...)):
-#     """
-#     Upload or replace resume JSON via form data.
-#     """
-#     conn = None
-#     try:
-#         content = await file.read()
-#         try:
-#             resume_data = json.loads(content)
-#         except Exception:
-#             raise HTTPException(status_code=400, detail="Invalid JSON file")
-
-#         conn = get_db_connection()
-#         with conn.cursor() as cursor:
-#             resume_json_str = json.dumps(resume_data)
-            
-#             cursor.execute("SELECT id FROM AIPrepTool_resumes WHERE user_id = %s", (session_id,))
-#             if cursor.fetchone():
-#                 cursor.execute("""
-#                     UPDATE AIPrepTool_resumes SET resume_json = %s WHERE user_id = %s
-#                 """, (resume_json_str, session_id))
-#             else:
-#                 cursor.execute("""
-#                     INSERT INTO AIPrepTool_resumes (user_id, resume_json) VALUES (%s, %s)
-#                 """, (session_id, resume_json_str))
-                
-#         conn.commit()
-        
-#         # Determine candidate name from json if possible
-#         candidate_name = resume_data.get("basics", {}).get("name") or resume_data.get("name", "Candidate")
-        
-#         return {
-#             "message": "Resume uploaded successfully",
-#             "candidate_name": candidate_name,
-#             "word_count": len(resume_json_str.split())
-#         }
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=str(e))
-#     finally:
-#         if conn:
-#             conn.close()
-
-# @router.get("/summary")
-# def get_resume_summary(session_id: str):
-#     """
-#     Check if the user has uploaded a resume for the dashboard progression.
-#     """
-#     conn = None
-#     try:
-#         conn = get_db_connection()
-#         with conn.cursor() as cursor:
-#             cursor.execute("SELECT resume_json FROM AIPrepTool_resumes WHERE user_id = %s", (session_id,))
-#             res = cursor.fetchone()
-#             if res:
-#                 resume_data = json.loads(res['resume_json']) if isinstance(res['resume_json'], str) else res['resume_json']
-#                 candidate_name = resume_data.get("basics", {}).get("name") or resume_data.get("name", "")
-#                 return {"resume_text": "Exists", "candidate_name": candidate_name}
-#         return {}
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=str(e))
-#     finally:
-#         if conn:
-#             conn.close()
-
-
-
 import json
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form, BackgroundTasks
 from pydantic import BaseModel
@@ -139,64 +10,75 @@ from openai import OpenAI
 
 router = APIRouter(prefix="/api/setup", tags=["setup"])
 
-
 class ValidationRequest(BaseModel):
     api_key: str
     api_provider: str
-
+    session_id: str
 
 @router.post("/validate")
 def validate_key(req: ValidationRequest):
     try:
-        client = OpenAI(api_key=req.api_key)
-        client.models.list()
+        if req.api_provider.lower() == "openai":
+            client = OpenAI(api_key=req.api_key)
+            client.models.list()
+        # Add other provider validations here if needed
 
-        session_id = str(uuid.uuid4())
         encrypted_key = encrypt(req.api_key)
 
         conn = get_db_connection()
         with conn.cursor() as cursor:
             cursor.execute("""
-                INSERT INTO AIPrepTool_candidates (user_id, api_key_encrypted)
-                VALUES (%s, %s)
-                ON DUPLICATE KEY UPDATE api_key_encrypted = %s
-            """, (session_id, encrypted_key, encrypted_key))
+                UPDATE aiprep_tool_candidates 
+                SET api_key_encrypted = %s 
+                WHERE user_id = %s
+            """, (encrypted_key, req.session_id))
+            
+            # If no row was updated, it means the session doesn't exist
+            if cursor.rowcount == 0:
+                # Should not happen if they called /init first
+                cursor.execute("""
+                    INSERT INTO aiprep_tool_candidates (user_id, api_key_encrypted)
+                    VALUES (%s, %s)
+                """, (req.session_id, encrypted_key))
 
         conn.commit()
         conn.close()
 
-        return {"session_id": session_id}
+        return {"message": "API Key validated and stored successfully"}
 
     except Exception as e:
         print("ERROR:", str(e))
         raise HTTPException(400, "Invalid API Key")
 
-
-# ---------- Candidate ----------
-class CandidateSetup(BaseModel):
-    user_id: str
+class SetupInit(BaseModel):
+    wbl_email: str
     name: str
 
-
-@router.post("/")
-def init_candidate(data: CandidateSetup):
+@router.post("/init")
+def init_session(data: SetupInit):
     conn = get_db_connection()
-
     try:
         with conn.cursor() as cursor:
-            cursor.execute("""
-                INSERT INTO AIPrepTool_candidates (user_id, name)
-                VALUES (%s, %s)
-                ON DUPLICATE KEY UPDATE name = %s
-            """, (data.user_id, data.name, data.name))
-
+            # Check if this WBL email already has a session
+            cursor.execute("SELECT user_id FROM aiprep_tool_candidates WHERE wbl_email = %s", (data.wbl_email,))
+            row = cursor.fetchone()
+            
+            if row:
+                session_id = row['user_id']
+                # Update name just in case
+                cursor.execute("UPDATE aiprep_tool_candidates SET name = %s WHERE wbl_email = %s", (data.name, data.wbl_email))
+            else:
+                session_id = str(uuid.uuid4())
+                cursor.execute("""
+                    INSERT INTO aiprep_tool_candidates (user_id, wbl_email, name)
+                    VALUES (%s, %s, %s)
+                """, (session_id, data.wbl_email, data.name))
+        
         conn.commit()
-        return {"message": "Candidate setup successful"}
-
+        return {"session_id": session_id}
     except Exception as e:
         print("ERROR:", str(e))
-        raise HTTPException(500, "Failed to setup candidate")
-
+        raise HTTPException(500, "Failed to initialize session")
     finally:
         conn.close()
 
@@ -211,7 +93,7 @@ def extract_latest_company_bg(user_id: str, resume_json: dict):
         conn = get_db_connection()
         try:
             with conn.cursor() as cursor:
-                cursor.execute("UPDATE AIPrepTool_candidates SET extraction_status = 'failed' WHERE user_id = %s", (user_id,))
+                cursor.execute("UPDATE aiprep_tool_candidates SET extraction_status = 'failed' WHERE user_id = %s", (user_id,))
             conn.commit()
         except:
             pass
@@ -285,7 +167,7 @@ def extract_latest_company_bg(user_id: str, resume_json: dict):
             try:
                 with conn.cursor() as cursor:
                     cursor.execute("""
-                        INSERT INTO AIPrepTool_project_context (
+                        INSERT INTO aiprep_tool_project_context (
                             user_id, company_name, domain, product, business_problem, previous_system,
                             key_problems, ai_techniques, agent_usage, impact, evaluation_approach,
                             challenges_learnings, learnings, future_roadmap,
@@ -317,7 +199,7 @@ def extract_latest_company_bg(user_id: str, resume_json: dict):
                         challenges_learnings, learnings, future_roadmap,
                         background, json.dumps(skills), architecture, business_value, role
                     ))
-                    cursor.execute("UPDATE AIPrepTool_candidates SET extraction_status = 'completed' WHERE user_id = %s", (user_id,))
+                    cursor.execute("UPDATE aiprep_tool_candidates SET extraction_status = 'completed' WHERE user_id = %s", (user_id,))
                 conn.commit()
             finally:
                 conn.close()
@@ -326,97 +208,13 @@ def extract_latest_company_bg(user_id: str, resume_json: dict):
         conn = get_db_connection()
         try:
             with conn.cursor() as cursor:
-                cursor.execute("UPDATE AIPrepTool_candidates SET extraction_status = 'failed' WHERE user_id = %s", (user_id,))
+                cursor.execute("UPDATE aiprep_tool_candidates SET extraction_status = 'failed' WHERE user_id = %s", (user_id,))
             conn.commit()
         except:
             pass
         finally:
             conn.close()
 
-
-@router.post("/sync-from-wbl")
-async def sync_from_wbl(payload: dict, background_tasks: BackgroundTasks):
-    token = payload.get("prep_token")
-    if not token:
-        raise HTTPException(400, "Token required")
-    
-    # In production, this should be the internal service URL or external IP
-    # wbl_url = os.getenv("WBL_BACKEND_URL", "https://api.whitebox-learning.com") # Production URL
-    wbl_url = os.getenv("http://localhost:8000") # Local URL
-    try:
-        response = requests.get(f"{wbl_url}/api/candidate/sync-data?token={token}", timeout=10)
-        if response.status_code != 200:
-            logger_detail = response.text
-            print(f"WBL Sync Failed: {response.status_code} - {logger_detail}")
-            raise HTTPException(401, "Failed to sync with WBL: Invalid token or service unavailable")
-        
-        data = response.json()
-        resume_json = data.get("resume_json")
-        api_keys = data.get("api_keys")
-        candidate_name = data.get("candidate_name") or ""
-        
-        if not candidate_name and resume_json:
-            candidate_name = resume_json.get("basics", {}).get("name") or resume_json.get("name", "Candidate")
-        elif not candidate_name:
-            candidate_name = "Candidate"
-        
-        session_id = str(uuid.uuid4())
-        
-        conn = get_db_connection()
-        try:
-            with conn.cursor() as cursor:
-                # Handle API Keys and Name
-                if api_keys and isinstance(api_keys, list):
-                    # Prioritize OpenAI or just take the first one
-                    selected_key = next((k for k in api_keys if k.get("provider") == "openai"), api_keys[0])
-                    if selected_key and selected_key.get("key"):
-                        encrypted_key = encrypt(selected_key["key"])
-                        cursor.execute("""
-                            INSERT INTO AIPrepTool_candidates (user_id, api_key_encrypted, name, extraction_status)
-                            VALUES (%s, %s, %s, 'pending')
-                            ON DUPLICATE KEY UPDATE api_key_encrypted = %s, name = %s, extraction_status = 'pending'
-                        """, (session_id, encrypted_key, candidate_name, encrypted_key, candidate_name))
-                    else:
-                        cursor.execute("""
-                            INSERT INTO AIPrepTool_candidates (user_id, name, extraction_status)
-                            VALUES (%s, %s, 'pending')
-                            ON DUPLICATE KEY UPDATE name = %s, extraction_status = 'pending'
-                        """, (session_id, candidate_name, candidate_name))
-                else:
-                    cursor.execute("""
-                        INSERT INTO AIPrepTool_candidates (user_id, name, extraction_status)
-                        VALUES (%s, %s, 'pending')
-                        ON DUPLICATE KEY UPDATE name = %s, extraction_status = 'pending'
-                    """, (session_id, candidate_name, candidate_name))
-                
-                # Handle Resume
-                if resume_json:
-                    resume_json_str = json.dumps(resume_json)
-                    cursor.execute("""
-                        INSERT INTO AIPrepTool_resumes (user_id, resume_json)
-                        VALUES (%s, %s)
-                        ON DUPLICATE KEY UPDATE resume_json = %s
-                    """, (session_id, resume_json_str, resume_json_str))
-            
-            conn.commit()
-        finally:
-            conn.close()
-            
-        if resume_json:
-            background_tasks.add_task(extract_latest_company_bg, session_id, resume_json)
-            
-        return {
-            "session_id": session_id,
-            "candidate_name": candidate_name
-        }
-    except HTTPException:
-        raise
-    except Exception as e:
-        print("SYNC ERROR:", str(e))
-        raise HTTPException(500, f"Internal Sync Error: {str(e)}")
-
-
-# ---------- Resume ----------
 @router.post("/resume")
 async def upload_resume(background_tasks: BackgroundTasks, session_id: str = Form(...), file: UploadFile = File(...)):
     conn = get_db_connection()
@@ -429,12 +227,12 @@ async def upload_resume(background_tasks: BackgroundTasks, session_id: str = For
 
         with conn.cursor() as cursor:
             cursor.execute("""
-                INSERT INTO AIPrepTool_resumes (user_id, resume_json)
+                INSERT INTO aiprep_tool_resumes (user_id, resume_json)
                 VALUES (%s, %s)
                 ON DUPLICATE KEY UPDATE resume_json = %s
             """, (session_id, resume_json_str, resume_json_str))
             cursor.execute("""
-                UPDATE AIPrepTool_candidates SET extraction_status = 'pending' WHERE user_id = %s
+                UPDATE aiprep_tool_candidates SET extraction_status = 'pending' WHERE user_id = %s
             """, (session_id,))
 
         conn.commit()
@@ -452,25 +250,27 @@ async def upload_resume(background_tasks: BackgroundTasks, session_id: str = For
 
 @router.get("/summary")
 def get_resume_summary(session_id: str):
-    """
-    Check if the user has uploaded a resume for the dashboard progression.
-    """
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
-            cursor.execute("SELECT name FROM AIPrepTool_candidates WHERE user_id = %s", (session_id,))
+            cursor.execute("SELECT name FROM aiprep_tool_candidates WHERE user_id = %s", (session_id,))
             candidate_res = cursor.fetchone()
             candidate_name = candidate_res['name'] if candidate_res and candidate_res['name'] else ""
             
-            cursor.execute("SELECT resume_json FROM AIPrepTool_resumes WHERE user_id = %s", (session_id,))
+            cursor.execute("SELECT resume_json FROM aiprep_tool_resumes WHERE user_id = %s", (session_id,))
             res = cursor.fetchone()
+            
+            cursor.execute("SELECT api_key_encrypted FROM aiprep_tool_candidates WHERE user_id = %s", (session_id,))
+            key_res = cursor.fetchone()
+            has_api_key = bool(key_res and key_res['api_key_encrypted'])
+
             if res:
                 if not candidate_name:
                     resume_data = json.loads(res['resume_json']) if isinstance(res['resume_json'], str) else res['resume_json']
                     candidate_name = resume_data.get("basics", {}).get("name") or resume_data.get("name", "")
-                return {"resume_text": "Exists", "candidate_name": candidate_name}
+                return {"resume_text": "Exists", "candidate_name": candidate_name, "has_api_key": has_api_key}
             else:
-                return {"candidate_name": candidate_name}
+                return {"candidate_name": candidate_name, "has_api_key": has_api_key}
     except Exception as e:
         print("ERROR:", str(e))
         raise HTTPException(status_code=500, detail=str(e))
@@ -482,7 +282,7 @@ def get_extraction_status(session_id: str):
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
-            cursor.execute("SELECT extraction_status FROM AIPrepTool_candidates WHERE user_id = %s", (session_id,))
+            cursor.execute("SELECT extraction_status FROM aiprep_tool_candidates WHERE user_id = %s", (session_id,))
             res = cursor.fetchone()
             if res and 'extraction_status' in res:
                 return {"status": res["extraction_status"] or "completed"}

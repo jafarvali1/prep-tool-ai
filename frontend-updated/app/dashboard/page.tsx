@@ -47,7 +47,7 @@ export default function DashboardPipeline() {
 
         try {
           const csHist = await getCaseStudyHistory(sid);
-          const caseStudies = csHist.AIPrepTool_case_studies || csHist.case_studies || [];
+          const caseStudies = csHist.aiprep_tool_case_studies || csHist.case_studies || [];
           if (caseStudies.length > 0) {
             setHasCaseStudy(true);
           }
@@ -55,7 +55,7 @@ export default function DashboardPipeline() {
 
         try {
           const introHist = await getIntroHistory(sid);
-          const attempts = introHist.AIPrepTool_attempts || introHist.history || introHist.attempts || [];
+          const attempts = introHist.aiprep_tool_attempts || introHist.history || introHist.attempts || [];
           if (attempts.length > 0) {
             const passedAny = attempts.some((a: any) => a.score >= 70);
             setHasPassedIntro(passedAny);

@@ -3,7 +3,7 @@ from db.connection import get_db_connection
 
 def get_candidate_context(user_id: str):
     """
-    Fetches full context: resume_json, AIPrepTool_project_context, intro evaluation.
+    Fetches full context: resume_json, aiprep_tool_project_context, intro evaluation.
     This context MUST be used in ALL AI calls.
     """
     context = {
@@ -16,7 +16,7 @@ def get_candidate_context(user_id: str):
         conn = get_db_connection()
         with conn.cursor() as cursor:
             # 1. Fetch Resume
-            cursor.execute("SELECT resume_json FROM AIPrepTool_resumes WHERE user_id = %s", (user_id,))
+            cursor.execute("SELECT resume_json FROM aiprep_tool_resumes WHERE user_id = %s", (user_id,))
             res = cursor.fetchone()
             if res and res.get('resume_json'):
                 try:
@@ -25,13 +25,13 @@ def get_candidate_context(user_id: str):
                     pass
 
             # 2. Fetch Project Context
-            cursor.execute("SELECT product, architecture, business_value, role, impact FROM AIPrepTool_project_context WHERE user_id = %s", (user_id,))
+            cursor.execute("SELECT product, architecture, business_value, role, impact FROM aiprep_tool_project_context WHERE user_id = %s", (user_id,))
             proj = cursor.fetchone()
             if proj:
                 context["project"] = proj
                 
             # 3. Fetch Intro Eval 
-            cursor.execute("SELECT score, passed, feedback FROM AIPrepTool_evaluations WHERE user_id = %s AND type = 'intro' ORDER BY id DESC LIMIT 1", (user_id,))
+            cursor.execute("SELECT score, passed, feedback FROM aiprep_tool_evaluations WHERE user_id = %s AND type = 'intro' ORDER BY id DESC LIMIT 1", (user_id,))
             intro = cursor.fetchone()
             if intro:
                 if 'feedback' in intro and isinstance(intro['feedback'], str):

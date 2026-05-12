@@ -78,7 +78,7 @@ def evaluate_live(data: LiveEvalRequest):
             conn = get_db_connection()
             with conn.cursor() as cursor:
                 cursor.execute("""
-                    INSERT INTO AIPrepTool_evaluations (user_id, type, score, passed, feedback, raw_response)
+                    INSERT INTO aiprep_tool_evaluations (user_id, type, score, passed, feedback, raw_response)
                     VALUES (%s, %s, %s, %s, %s, %s)
                 """, (
                     data.session_id,
@@ -121,7 +121,7 @@ def complete_interview(data: CompleteRequest):
         conn = get_db_connection()
         with conn.cursor() as cursor:
             cursor.execute("""
-                INSERT INTO AIPrepTool_evaluations (user_id, type, score, passed, feedback, raw_response)
+                INSERT INTO aiprep_tool_evaluations (user_id, type, score, passed, feedback, raw_response)
                 VALUES (%s, %s, %s, %s, %s, %s)
             """, (
                 data.session_id,

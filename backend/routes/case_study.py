@@ -29,7 +29,7 @@ def generate_standard_case_study(req: GenerateRequest):
 
         conn = get_db_connection()
         with conn.cursor() as cursor:
-            cursor.execute("SELECT product, architecture, business_value, role, impact FROM AIPrepTool_project_context WHERE user_id = %s", (req.session_id,))
+            cursor.execute("SELECT product, architecture, business_value, role, impact FROM aiprep_tool_project_context WHERE user_id = %s", (req.session_id,))
             res = cursor.fetchone()
             if not res:
                 raise HTTPException(404, "No project context found. Please extract your project first.")
@@ -64,7 +64,7 @@ FIRST PERSON PERSPECTIVE: You MUST write the entire case study from the perspect
 
         with conn.cursor() as cursor:
             cursor.execute("""
-                INSERT INTO AIPrepTool_case_studies (user_id, content, topic)
+                INSERT INTO aiprep_tool_case_studies (user_id, content, topic)
                 VALUES (%s, %s, %s)
             """, (req.session_id, res_str, req.topic or "Resume Project"))
         conn.commit()
@@ -246,7 +246,7 @@ OUTPUT REQUIREMENTS:
         topic_name = req.template_key.upper() + " Guide"
         with conn.cursor() as cursor:
             cursor.execute("""
-                INSERT INTO AIPrepTool_case_studies (user_id, content, topic)
+                INSERT INTO aiprep_tool_case_studies (user_id, content, topic)
                 VALUES (%s, %s, %s)
             """, (req.session_id, res_str, topic_name))
         conn.commit()

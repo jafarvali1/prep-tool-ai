@@ -15,16 +15,16 @@
 #         conn = get_db_connection()
 #         with conn.cursor() as cursor:
 #             # 1. UPSERT Project Context
-#             cursor.execute("SELECT id FROM AIPrepTool_project_context WHERE user_id = %s", (data.user_id,))
+#             cursor.execute("SELECT id FROM aiprep_tool_project_context WHERE user_id = %s", (data.user_id,))
 #             if cursor.fetchone():
 #                 cursor.execute("""
-#                     UPDATE AIPrepTool_project_context 
+#                     UPDATE aiprep_tool_project_context 
 #                     SET product=%s, architecture=%s, business_value=%s, role=%s, impact=%s
 #                     WHERE user_id=%s
 #                 """, (data.product, data.architecture, data.business_value, data.role, data.impact, data.user_id))
 #             else:
 #                 cursor.execute("""
-#                     INSERT INTO AIPrepTool_project_context (user_id, product, architecture, business_value, role, impact)
+#                     INSERT INTO aiprep_tool_project_context (user_id, product, architecture, business_value, role, impact)
 #                     VALUES (%s, %s, %s, %s, %s, %s)
 #                 """, (data.user_id, data.product, data.architecture, data.business_value, data.role, data.impact))
                 
@@ -37,7 +37,7 @@
 #         # 3. Store Evaluation
 #         with conn.cursor() as cursor:
 #             cursor.execute("""
-#                 INSERT INTO AIPrepTool_evaluations (user_id, type, score, passed, feedback, raw_response)
+#                 INSERT INTO aiprep_tool_evaluations (user_id, type, score, passed, feedback, raw_response)
 #                 VALUES (%s, %s, %s, %s, %s, %s)
 #             """, (
 #                 data.user_id, 
@@ -72,10 +72,10 @@
 #     try:
 #         conn = get_db_connection()
 #         with conn.cursor() as cursor:
-#             cursor.execute("SELECT id FROM AIPrepTool_project_context WHERE user_id = %s", (session_id,))
+#             cursor.execute("SELECT id FROM aiprep_tool_project_context WHERE user_id = %s", (session_id,))
 #             if cursor.fetchone():
-#                 return {"AIPrepTool_case_studies": [{"id": 1}]} # Mock format for dashboard
-#         return {"AIPrepTool_case_studies": []}
+#                 return {"aiprep_tool_case_studies": [{"id": 1}]} # Mock format for dashboard
+#         return {"aiprep_tool_case_studies": []}
 #     except Exception as e:
 #         raise HTTPException(status_code=500, detail=str(e))
 #     finally:
@@ -102,7 +102,7 @@ def save_and_evaluate_project(data: ProjectContextData):
         # 1. Atomic UPSERT Project Context
         with conn.cursor() as cursor:
             cursor.execute("""
-                INSERT INTO AIPrepTool_project_context (
+                INSERT INTO aiprep_tool_project_context (
                     user_id, product, architecture, business_value, role, impact,
                     business_problem, previous_system, key_objectives, users_scale,
                     agents_components, key_workflows, tools_integrations, tech_stack,
@@ -190,7 +190,7 @@ Future Scope: {data.future_roadmap}
                 db_score = int(score)
 
             cursor.execute("""
-                INSERT INTO AIPrepTool_evaluations (user_id, type, score, passed, feedback, raw_response)
+                INSERT INTO aiprep_tool_evaluations (user_id, type, score, passed, feedback, raw_response)
                 VALUES (%s, %s, %s, %s, %s, %s)
             """, (
                 data.user_id,
@@ -239,10 +239,10 @@ def get_project_history(session_id: str):
     try:
         conn = get_db_connection()
         with conn.cursor() as cursor:
-            cursor.execute("SELECT id FROM AIPrepTool_project_context WHERE user_id = %s", (session_id,))
+            cursor.execute("SELECT id FROM aiprep_tool_project_context WHERE user_id = %s", (session_id,))
             if cursor.fetchone():
-                return {"AIPrepTool_case_studies": [{"id": 1}]}
-        return {"AIPrepTool_case_studies": []}
+                return {"aiprep_tool_case_studies": [{"id": 1}]}
+        return {"aiprep_tool_case_studies": []}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

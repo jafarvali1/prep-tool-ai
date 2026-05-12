@@ -12,23 +12,23 @@ def get_final_report(session_id: str):
         conn = get_db_connection()
         with conn.cursor() as cursor:
             # Aggregate setup/resume
-            cursor.execute("SELECT resume_json FROM AIPrepTool_resumes WHERE user_id = %s", (session_id,))
+            cursor.execute("SELECT resume_json FROM aiprep_tool_resumes WHERE user_id = %s", (session_id,))
             resume = cursor.fetchone()
 
             # Aggregate project
-            cursor.execute("SELECT domain, background, skills, product, architecture, role, impact FROM AIPrepTool_project_context WHERE user_id = %s", (session_id,))
+            cursor.execute("SELECT domain, background, skills, product, architecture, role, impact FROM aiprep_tool_project_context WHERE user_id = %s", (session_id,))
             project = cursor.fetchone()
 
-            # Aggregate intro AIPrepTool_evaluations
-            cursor.execute("SELECT score, feedback, raw_response FROM AIPrepTool_evaluations WHERE user_id = %s AND type = %s ORDER BY created_at DESC", (session_id, "intro"))
+            # Aggregate intro aiprep_tool_evaluations
+            cursor.execute("SELECT score, feedback, raw_response FROM aiprep_tool_evaluations WHERE user_id = %s AND type = %s ORDER BY created_at DESC", (session_id, "intro"))
             intro_evals = cursor.fetchall()
 
             # Aggregate interview answers/evals
-            cursor.execute("SELECT score, feedback, raw_response FROM AIPrepTool_evaluations WHERE user_id = %s AND type = %s ORDER BY created_at DESC", (session_id, "interview_answer"))
+            cursor.execute("SELECT score, feedback, raw_response FROM aiprep_tool_evaluations WHERE user_id = %s AND type = %s ORDER BY created_at DESC", (session_id, "interview_answer"))
             interview_evals = cursor.fetchall()
             
             # Check if all completed
-            cursor.execute("SELECT id FROM AIPrepTool_evaluations WHERE user_id = %s AND type = %s", (session_id, "interview_complete"))
+            cursor.execute("SELECT id FROM aiprep_tool_evaluations WHERE user_id = %s AND type = %s", (session_id, "interview_complete"))
             interview_complete = cursor.fetchone() is not None
 
             # Parse JSON fields where needed
