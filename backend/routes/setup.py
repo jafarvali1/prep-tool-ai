@@ -29,6 +29,9 @@ class ValidationRequest(BaseModel):
     model_name: Optional[str] = None
     voice_enabled: bool = False
 
+class SyncFromWblRequest(BaseModel):
+    prep_token: str
+
 
 @router.post("/validate")
 def validate_key(req: ValidationRequest):
@@ -420,6 +423,35 @@ def get_resume_summary(session_id: str):
     finally:
         conn.close()
 
+@router.post("/sync-from-wbl")
+def sync_from_wbl(data: SyncFromWblRequest):
+    """
+    Called by AI Prep Dashboard when a user clicks 'Manage' in WBL.
+    We just return the session_id and candidate name so they bypass the setup wizard.
+    Only succeeds if the candidate has actually completed setup (i.e. has a resume).
+    """
+    session_id = data.prep_token
+    resume = fetch_resume_dict(session_id)
+    if not resume:
+        raise HTTPException(status_code=400, detail="Setup not completed yet")
+
+    session_id = data.prep_token
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            if is_wbl_candidate_session(session_id):
+                cursor.execute("SELECT full_name as name FROM candidate WHERE id = %s", (session_id,))
+            else:
+                cursor.execute("SELECT name FROM aiprep_tool_candidates WHERE user_id = %s", (session_id,))
+            
+            row = cursor.fetchone()
+            name = row["name"] if row and row["name"] else "Candidate"
+            return {"session_id": session_id, "candidate_name": name}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
+
 @router.post("/init-and-summary")
 def init_and_summary(data: SetupInit):
     """Combined endpoint to initialize a session and fetch the summary in one DB connection round-trip."""
@@ -429,21 +461,8 @@ def init_and_summary(data: SetupInit):
             # ── 1. Init Session ──
             if data.candidate_id is not None:
                 cid = data.candidate_id
-                cursor.execute("SELECT id FROM candidate WHERE id = %s", (cid,))
-                if not cursor.fetchone():
-                    raise HTTPException(404, "Candidate not found")
-
                 session_id = str(cid)
-                cursor.execute(
-                    """
-                    INSERT INTO aiprep_tool_candidates (user_id, wbl_email, name)
-                    VALUES (%s, %s, %s)
-                    ON DUPLICATE KEY UPDATE
-                        name = %s,
-                        wbl_email = %s
-                    """,
-                    (session_id, data.wbl_email or "", data.name or "", data.name or "", data.wbl_email or ""),
-                )
+                # DO NOT insert into aiprep_tool_candidates. They belong to WBL's `candidate` table.
             else:
                 if not data.wbl_email:
                     raise HTTPException(400, "wbl_email or candidate_id is required")
@@ -464,7 +483,10 @@ def init_and_summary(data: SetupInit):
             conn.commit()
 
             # ── 2. Get Summary ──
-            cursor.execute("SELECT name FROM aiprep_tool_candidates WHERE user_id = %s", (session_id,))
+            if is_wbl_candidate_session(session_id):
+                cursor.execute("SELECT full_name as name FROM candidate WHERE id = %s", (session_id,))
+            else:
+                cursor.execute("SELECT name FROM aiprep_tool_candidates WHERE user_id = %s", (session_id,))
             candidate_res = cursor.fetchone()
             candidate_name = candidate_res["name"] if candidate_res and candidate_res.get("name") else ""
 
