@@ -102,10 +102,10 @@ def init_session(data: SetupInit):
                     INSERT INTO aiprep_tool_candidates (user_id, wbl_email, name)
                     VALUES (%s, %s, %s)
                     ON DUPLICATE KEY UPDATE
-                        name = COALESCE(VALUES(name), name),
-                        wbl_email = COALESCE(VALUES(wbl_email), wbl_email)
+                        name = %s,
+                        wbl_email = %s
                     """,
-                    (session_id, data.wbl_email or "", data.name or ""),
+                    (session_id, data.wbl_email or "", data.name or "", data.name or "", data.wbl_email or ""),
                 )
                 conn.commit()
                 return {"session_id": session_id}
@@ -399,12 +399,12 @@ def get_resume_summary(session_id: str):
                 if isinstance(resume_json_out, dict):
                     resume_filename = resume_json_out.get("_meta_filename", "")
 
-            if has_resume and not candidate_name and resume_json_out:
-                candidate_name = (
-                    resume_json_out.get("basics", {}).get("name")
-                    or resume_json_out.get("name")
-                    or ""
-                )
+            if has_resume and not candidate_name and isinstance(resume_json_out, dict):
+                basics = resume_json_out.get("basics") or {}
+                if isinstance(basics, dict):
+                    candidate_name = basics.get("name") or resume_json_out.get("name") or ""
+                else:
+                    candidate_name = resume_json_out.get("name") or ""
 
             return {
                 "resume_text": "Exists" if has_resume else None,
@@ -439,10 +439,10 @@ def init_and_summary(data: SetupInit):
                     INSERT INTO aiprep_tool_candidates (user_id, wbl_email, name)
                     VALUES (%s, %s, %s)
                     ON DUPLICATE KEY UPDATE
-                        name = COALESCE(VALUES(name), name),
-                        wbl_email = COALESCE(VALUES(wbl_email), wbl_email)
+                        name = %s,
+                        wbl_email = %s
                     """,
-                    (session_id, data.wbl_email or "", data.name or ""),
+                    (session_id, data.wbl_email or "", data.name or "", data.name or "", data.wbl_email or ""),
                 )
             else:
                 if not data.wbl_email:
@@ -508,12 +508,12 @@ def init_and_summary(data: SetupInit):
                 if isinstance(resume_json_out, dict):
                     resume_filename = resume_json_out.get("_meta_filename", "")
 
-            if has_resume and not candidate_name and resume_json_out:
-                candidate_name = (
-                    resume_json_out.get("basics", {}).get("name")
-                    or resume_json_out.get("name")
-                    or ""
-                )
+            if has_resume and not candidate_name and isinstance(resume_json_out, dict):
+                basics = resume_json_out.get("basics") or {}
+                if isinstance(basics, dict):
+                    candidate_name = basics.get("name") or resume_json_out.get("name") or ""
+                else:
+                    candidate_name = resume_json_out.get("name") or ""
 
             return {
                 "session_id": session_id,
@@ -526,11 +526,11 @@ def init_and_summary(data: SetupInit):
                     "llm_keys": llm_keys,
                 }
             }
-    except HTTPException:
-        raise
     except Exception as e:
-        print("ERROR:", str(e))
-        raise HTTPException(500, "Failed to initialize and fetch summary")
+        import traceback
+        err_msg = traceback.format_exc()
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=500, content={"detail": err_msg})
     finally:
         conn.close()
 
