@@ -1,24 +1,27 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getResumeSummary, getCaseStudyHistory, getIntroHistory } from "@/lib/api";
-import Link from "next/link";
-import Navbar from "@/components/Navbar";
+import { getResumeSummary, getCaseStudyHistory, getIntroHistory, getFinalReport } from "@/lib/api";
+import DashboardLayout from "@/components/layout/DashboardLayout";
+import { Card, CardBody, CardFooter } from "@/components/ui/Card";
+import Badge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
+import { useAppState } from "@/lib/useAppState";
 import {
-  FileText,
-  User,
   CheckCircle,
   Lock,
   ArrowRight,
   BookOpen,
   Mic,
-  Video
+  Video,
+  User,
+  Zap,
 } from "lucide-react";
 
-export default function DashboardPipeline() {
+export default function Dashboard() {
   const router = useRouter();
-  const [sessionId, setSessionId] = useState("");
-  const [candidateName, setCandidateName] = useState("");
+  const appState = useAppState();
   const [loading, setLoading] = useState(true);
 
   const [hasSetup, setHasSetup] = useState(false);
@@ -32,7 +35,6 @@ export default function DashboardPipeline() {
       router.push("/setup");
       return;
     }
-    setSessionId(sid);
 
     const checkPipelineStatus = async () => {
       try {
@@ -40,9 +42,6 @@ export default function DashboardPipeline() {
         if (resumeSummary.resume_text) setHasSetup(true);
         if (resumeSummary.candidate_name) {
           localStorage.setItem("candidate_name", resumeSummary.candidate_name);
-          setCandidateName(resumeSummary.candidate_name);
-        } else {
-          setCandidateName(localStorage.getItem("candidate_name") || "");
         }
 
         try {
@@ -63,7 +62,6 @@ export default function DashboardPipeline() {
         } catch (e) {}
 
         try {
-          const { getFinalReport } = await import("@/lib/api");
           const report = await getFinalReport(sid);
           if (report?.interview_complete) {
             setHasPassedInterview(true);
@@ -81,273 +79,215 @@ export default function DashboardPipeline() {
 
   const handleLogout = () => {
     localStorage.removeItem("session_id");
+    localStorage.removeItem("candidate_name");
     localStorage.removeItem("api_provider");
     router.push("/");
   };
 
   const steps = [
     {
-      num: 1,
       id: "setup",
-      icon: <User size={24} />,
-      title: "Complete Initial Setup",
-      desc: "Upload your resume and connect your AI API credentials.",
+      icon: User,
+      title: "Complete Setup",
+      desc: "Upload resume and connect your AI API key",
       href: "/setup",
       status: hasSetup ? "completed" : "pending",
-      btnText: hasSetup ? "Update Setup" : "Start Setup",
+      btnText: hasSetup ? "Update" : "Start",
     },
     {
-      num: 2,
       id: "project",
-      icon: <BookOpen size={24} />,
-      title: "Project Explanation & Case Study",
-      desc: "Explain your project and generate a comprehensive case study that interviewers will ask about.",
-      href: "/project-explanation",
-      status: hasCaseStudy ? "completed" : (hasSetup ? "pending" : "locked"),
-      btnText: hasCaseStudy ? "Review Project" : "Explain Project",
+      icon: BookOpen,
+      title: "Preparation Hub",
+      desc: "Build case studies and prepare your project explanation",
+      href: "/preparation-hub",
+      status: hasCaseStudy ? "completed" : hasSetup ? "pending" : "locked",
+      btnText: "Go to Hub",
     },
     {
-      num: 3,
       id: "intro",
-      icon: <Mic size={24} />,
-      title: "Self-Introduction Audio Test",
-      desc: "Record your professional introduction and get AI feedback on fluency, structure, and confidence.",
+      icon: Mic,
+      title: "Intro Practice",
+      desc: "Record and refine your professional introduction",
       href: "/intro",
-      status: hasPassedIntro ? "completed" : (hasSetup ? "pending" : "locked"),
-      btnText: hasPassedIntro ? "Retake Intro" : "Record Intro",
+      status: hasPassedIntro ? "completed" : hasSetup ? "pending" : "locked",
+      btnText: hasPassedIntro ? "Practice Again" : "Practice Now",
     },
     {
-      num: 4,
       id: "interviews",
-      icon: <Video size={24} />,
-      title: "Practice Mock Interviews",
-      desc: "Have interactive mock interviews with AI agents who ask questions based on your project context.",
-      href: "/interview",
-      status: hasPassedInterview ? "completed" : (hasSetup ? "pending" : "locked"),
-      btnText: hasPassedInterview ? "Retake Interviews" : "Start Interviews",
-    }
+      icon: Video,
+      title: "Mock Interviews",
+      desc: "Practice real interview scenarios with AI",
+      href: "/interview-select",
+      status: hasPassedInterview ? "completed" : hasSetup ? "pending" : "locked",
+      btnText: "Start Interview",
+    },
   ];
 
   if (loading) {
-     return (
-       <div style={{
-         minHeight: "100vh",
-         background: "var(--bg-primary)",
-         display: "flex",
-         justifyContent: "center",
-         alignItems: "center"
-       }}>
-          <div className="animate-spin" style={{
-            width: 40,
-            height: 40,
-            border: "3px solid var(--bg-tertiary)",
-            borderTopColor: "var(--accent)",
-            borderRadius: "50%"
-          }}></div>
-       </div>
-     );
+    return (
+      <DashboardLayout
+        candidateName={appState.candidateName}
+        onLogout={handleLogout}
+        theme={appState.theme}
+        onThemeToggle={() => appState.setTheme(appState.theme === "light" ? "dark" : "light")}
+      >
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="w-12 h-12 rounded-full border-4 border-gray-200 dark:border-slate-700 border-t-indigo-600 animate-spin mx-auto mb-4" />
+            <p className="text-gray-600 dark:text-gray-400">Loading your dashboard...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--bg-primary)" }}>
-      <Navbar candidateName={candidateName} onLogout={handleLogout} />
-
-      <div style={{ maxWidth: "900px", margin: "0 auto", padding: "48px 24px" }}>
-        
-        <div style={{ textAlign: "center", marginBottom: 56 }}>
-          <div className="badge badge-accent" style={{ display: "inline-flex", marginBottom: 16 }}>
-             Interview Readiness Journey
-          </div>
-          <h1 style={{
-            fontSize: 36,
-            marginBottom: 16,
-            color: "var(--text-primary)",
-            fontWeight: 700,
-          }}>
-            Your <span className="glow-text">Progress Path</span>
-          </h1>
-          <p style={{
-            color: "var(--text-secondary)",
-            fontSize: 15,
-            maxWidth: 600,
-            margin: "0 auto",
-            lineHeight: 1.6,
-            fontWeight: 400,
-          }}>
-            Follow each step sequentially. Complete one to unlock the next. Master your interview skills step by step.
-          </p>
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 20, position: "relative" }}>
-           {/* Connecting vertical line */}
-           <div style={{
-              position: "absolute",
-              left: 39,
-              top: 40,
-              bottom: 0,
-              width: 2,
-              background: "var(--border)",
-              zIndex: 0
-           }}></div>
-
-           {steps.map((step, i) => {
-              const isLocked = step.status === "locked";
-              const isCompleted = step.status === "completed";
-              const isPending = step.status === "pending";
-
-              return (
-                 <div key={step.id} style={{
-                    display: "flex",
-                    gap: 24,
-                    position: "relative",
-                    zIndex: 1,
-                    opacity: isLocked ? 0.6 : 1,
-                    transition: "opacity 0.2s"
-                 }}>
-                    
-                    {/* Status Circle */}
-                    <div style={{
-                       width: 80,
-                       height: 80,
-                       borderRadius: "50%",
-                       flexShrink: 0,
-                       background: isCompleted
-                         ? "rgba(16, 185, 129, 0.08)"
-                         : isPending
-                         ? "var(--bg-card)"
-                         : "transparent",
-                       border: `2px solid ${
-                         isCompleted
-                           ? "var(--success)"
-                           : isPending
-                           ? "var(--accent)"
-                           : "var(--border)"
-                       }`,
-                       display: "flex",
-                       alignItems: "center",
-                       justifyContent: "center",
-                       color: isCompleted
-                         ? "var(--success)"
-                         : isPending
-                         ? "var(--accent)"
-                         : "var(--text-muted)",
-                       boxShadow: isPending
-                         ? "0 4px 12px var(--accent-glow)"
-                         : "0 1px 3px rgba(0, 0, 0, 0.05)",
-                    }}>
-                       {isCompleted ? <CheckCircle size={32} /> : isLocked ? <Lock size={28} /> : step.icon}
-                    </div>
-
-                    {/* Step Content Card */}
-                    <div className="card" style={{
-                       flex: 1,
-                       padding: "28px 32px",
-                       display: "flex",
-                       flexDirection: "column",
-                       gap: 16,
-                       border: isPending
-                         ? "1px solid var(--border-accent)"
-                         : "1px solid var(--border)",
-                       background: isPending
-                         ? "var(--gradient-card)"
-                         : "var(--bg-card)",
-                    }}>
-                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                          <div style={{ flex: 1 }}>
-                             <span style={{
-                                fontSize: 12,
-                                textTransform: "uppercase",
-                                fontWeight: 700,
-                                letterSpacing: "0.5px",
-                                color: isCompleted
-                                  ? "var(--success)"
-                                  : isLocked
-                                  ? "var(--text-muted)"
-                                  : "var(--accent)",
-                                marginBottom: 8,
-                                display: "block"
-                             }}>
-                                {isCompleted ? "✓ Completed" : isLocked ? "Locked" : "Next Step"}
-                             </span>
-                             <h3 style={{
-                                fontSize: 20,
-                                color: "var(--text-primary)",
-                                fontWeight: 700,
-                             }}>
-                                {step.title}
-                             </h3>
-                          </div>
-                       </div>
-                       
-                       <p style={{
-                         color: "var(--text-secondary)",
-                         fontSize: 14,
-                         lineHeight: 1.6,
-                         fontWeight: 400,
-                       }}>
-                         {step.desc}
-                       </p>
-                       
-                       <div style={{ marginTop: "auto", paddingTop: 8 }}>
-                          {isLocked ? (
-                             <button className="btn-secondary" disabled style={{
-                               opacity: 0.5,
-                               cursor: "not-allowed",
-                               width: "100%",
-                             }}>
-                                Complete previous steps
-                             </button>
-                          ) : (
-                             <Link href={step.href} className={isPending ? "btn-primary" : "btn-secondary"} style={{
-                                 display: "inline-flex",
-                                 alignItems: "center",
-                                 gap: 8,
-                                 padding: "11px 20px",
-                                 fontSize: 14,
-                                 textDecoration: "none"
-                               }}>
-                                  {step.btnText} {isPending && <ArrowRight size={16} />}
-                             </Link>
-                          )}
-                       </div>
-                    </div>
-
-                 </div>
-              );
-           })}
-        </div>
-
-        {hasSetup && hasCaseStudy && hasPassedIntro && hasPassedInterview && (
-           <div style={{
-              marginTop: 64,
-              padding: 40,
-              borderRadius: 16,
-              background: "var(--gradient-card)",
-              border: "1px solid var(--accent)",
-              boxShadow: "0 8px 32px var(--accent-glow)",
-              textAlign: "center"
-           }}>
-              <h2 style={{ fontSize: 24, fontWeight: 700, color: "var(--text-primary)", marginBottom: 12 }}>
-                🎉 Pipeline Completed!
-              </h2>
-              <p style={{ color: "var(--text-secondary)", fontSize: 15, marginBottom: 24, maxWidth: 500, margin: "0 auto 24px" }}>
-                You have successfully completed all modules of the interview preparation pipeline. Click below to view your aggregated final report.
-              </p>
-              <Link href="/progress" className="btn-primary" style={{
-                  padding: "16px 32px",
-                  fontSize: 16,
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 8,
-                  boxShadow: "0 4px 16px var(--accent-glow)",
-                  textDecoration: "none"
-                }}>
-                  <FileText size={20} /> View Final Progress Report
-              </Link>
-           </div>
-        )}
-
+    <DashboardLayout
+      candidateName={appState.candidateName}
+      onLogout={handleLogout}
+      theme={appState.theme}
+      onThemeToggle={() => appState.setTheme(appState.theme === "light" ? "dark" : "light")}
+    >
+      {/* Welcome Header */}
+      <div className="mb-12">
+        <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+          Welcome back, {appState.candidateName}! 👋
+        </h1>
+        <p className="text-lg text-gray-600 dark:text-gray-400">
+          Continue your journey to ace your next interview
+        </p>
       </div>
-    </div>
+
+      {/* Quick Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+        {[
+          { label: "Setup", done: hasSetup },
+          { label: "Case Studies", done: hasCaseStudy },
+          { label: "Intro Ready", done: hasPassedIntro },
+          { label: "Interviews", done: hasPassedInterview },
+        ].map((stat) => (
+          <Card key={stat.label} className="text-center">
+            <CardBody className="py-6">
+              <div className="flex justify-center mb-3">
+                {stat.done ? (
+                  <CheckCircle className="text-emerald-500" size={28} />
+                ) : (
+                  <div className="w-7 h-7 rounded-full border-2 border-gray-300 dark:border-slate-600" />
+                )}
+              </div>
+              <p className="text-sm font-600 text-gray-700 dark:text-gray-300">
+                {stat.label}
+              </p>
+            </CardBody>
+          </Card>
+        ))}
+      </div>
+
+      {/* Pipeline Steps */}
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+          Your Interview Journey
+        </h2>
+
+        <div className="space-y-4">
+          {steps.map((step, idx) => {
+            const isLocked = step.status === "locked";
+            const isCompleted = step.status === "completed";
+            const Icon = step.icon;
+
+            return (
+              <Card
+                key={step.id}
+                className={isLocked ? "opacity-50" : ""}
+              >
+                <CardBody className="py-6">
+                  <div className="flex items-start gap-4">
+                    {/* Step Number */}
+                    <div
+                      className={`w-12 h-12 rounded-lg flex items-center justify-center font-bold text-lg flex-shrink-0 ${
+                        isCompleted
+                          ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300"
+                          : isLocked
+                            ? "bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-500"
+                            : "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300"
+                      }`}
+                    >
+                      {isCompleted ? <CheckCircle size={24} /> : isLocked ? <Lock size={24} /> : idx + 1}
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1">
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            {step.title}
+                            {isLocked && (
+                              <span className="text-xs font-600 text-amber-600 dark:text-amber-400">
+                                Locked
+                              </span>
+                            )}
+                          </h3>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                            {step.desc}
+                          </p>
+                        </div>
+                        <Badge
+                          status={step.status === "locked" ? "not-started" : step.status as "completed" | "in-progress" | "not-started"}
+                        >
+                          {step.status === "completed"
+                            ? "Done"
+                            : step.status === "locked"
+                              ? "Locked"
+                              : "In Progress"}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    {/* Action Button */}
+                    {!isLocked && (
+                      <Button
+                        variant={isCompleted ? "ghost" : "primary"}
+                        size="sm"
+                        onClick={() => router.push(step.href)}
+                        icon={<ArrowRight size={16} />}
+                        className="flex-shrink-0"
+                      >
+                        {step.btnText}
+                      </Button>
+                    )}
+                  </div>
+                </CardBody>
+              </Card>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Next Steps Suggestion */}
+      {hasSetup && !hasCaseStudy && (
+        <Card className="border-l-4 border-l-amber-500">
+          <CardBody>
+            <div className="flex items-start gap-4">
+              <Zap className="text-amber-500 flex-shrink-0 mt-1" size={24} />
+              <div>
+                <h3 className="font-bold text-gray-900 dark:text-white mb-1">
+                  Next: Explore Your Case Studies
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  Head to the Preparation Hub to explain your projects and generate comprehensive case studies.
+                </p>
+                <Button
+                  size="sm"
+                  onClick={() => router.push("/preparation-hub")}
+                  icon={<ArrowRight size={16} />}
+                >
+                  Go to Preparation Hub
+                </Button>
+              </div>
+            </div>
+          </CardBody>
+        </Card>
+      )}
+    </DashboardLayout>
   );
 }
